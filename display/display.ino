@@ -4,7 +4,7 @@
 I2C_LCD LCD;
 uint8_t I2C_LCD_ADDRESS = 0x51;
 //extern GUI_Bitmap_t bmBruin;
-const int refreshPeriod = 500; // display refresh time [ms]
+const int refreshPeriod = 100; // display refresh time [ms]
 int lastRefreshTime(0);
 
 // push buttons setup
