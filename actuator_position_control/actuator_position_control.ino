@@ -19,10 +19,13 @@ const double Ts = double(controlPeriod) / 1000; // controlPeriod [s]
 #define POT_MID (POT_MIN + POT_MAX)/2
 const int pot_pin = A0;
 int y_k(0);
-//int y_k1(0);
+int y_k1(0);
 
 // define controller error and output values
 int r_k = POT_MAX;
+int e_k(0);
+int u_k(0);
+int u_k_final(0);
 
 // define PWM limits
 #define PW_STOP 1460
@@ -48,7 +51,7 @@ void setup() {
 
   // create button interrupt
   pinMode(3, INPUT);
-  attachInterrupt(digitalPinToInterrupt(3), switch_reference, RISING);
+  attachInterrupt(digitalPinToInterrupt(3), switch_reference, FALLING);
   interrupts();
 }
 
