@@ -18,3 +18,9 @@ Microcontroller code for Bruin Racing's Baja SAE team.
 - max: 2000
 - min: 1000
 - stop: 1460
+
+# Control Design
+
+## reference values
+- max torque: 2700
+- max power: 3400
