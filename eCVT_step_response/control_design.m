@@ -3,14 +3,14 @@ clc;
 s = tf('s');
 
 % load plant model
-load ecvt_pwm2rpm
+load ecvt_pwm2rpm_tunedSecondary
 
 % add pade approximation of zoh lag
 Ts = .02;
 zoh_lag_pade = 1/(Ts/2*s + 1);
 
 % create overall plant
-sysG = zoh_lag_pade*pwm2rpm;
+sysG = zoh_lag_pade*pwm2rpm_tunedSecondary;
 
 % design gain compensator to improve response speed
 omega_s = 1/Ts * 2*pi; % sampling frequency

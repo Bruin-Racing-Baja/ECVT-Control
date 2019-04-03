@@ -1,5 +1,5 @@
-// eCVT_step_response.ino
-// this program is meant for gathering step response data from the powertrain
+// ecvt_step_response.ino
+// this sketch is meant for gathering step response data from the powertrain
 //
 // author: Tyler McCown (tylermccown@engineering.ucla.edu)
 // created: 3/28/19
@@ -7,7 +7,7 @@
 #include <Wire.h>
 #include <I2C_LCD.h>
 #include <Servo.h>
-
+	
 // display
 I2C_LCD LCD;
 uint8_t I2C_LCD_ADDRESS = 0x51;
@@ -141,7 +141,7 @@ void loop() {
     u_k = 0;
   }
 
-  // calculate rpm+
+  // calculate rpm
   detachInterrupt(digitalPinToInterrupt(sensor_pin));
   rpm = 60000.0/NUM_MAGNETS/(trigger_time - last_trigger);
 //  Serial.println(rpm);
