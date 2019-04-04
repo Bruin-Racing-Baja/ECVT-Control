@@ -1,6 +1,6 @@
 #include <Servo.h>
 
-#define UK_STOP 1460
+#define UK_STOP 1510
 #define UK_MAX 2000
 #define UK_MIN 1000
 
@@ -15,5 +15,6 @@ void setup() {
 
 void loop() {
   Actuator.writeMicroseconds(UK_STOP);
+  Serial.println(analogRead(A0));
   delay(20);
 }
