@@ -7,7 +7,7 @@
 #include <Wire.h>
 #include <I2C_LCD.h>
 #include <Servo.h>
-	
+
 // display
 I2C_LCD LCD;
 uint8_t I2C_LCD_ADDRESS = 0x51;
@@ -143,7 +143,10 @@ void loop() {
 
   // calculate rpm
   detachInterrupt(digitalPinToInterrupt(sensor_pin));
-  rpm = 60000.0/NUM_MAGNETS/(trigger_time - last_trigger);
+  int new_rpm = 60000.0/NUM_MAGNETS/(trigger_time - last_trigger);
+  if (new_rpm != 0) {
+    rpm = new_rpm;
+  }
 //  Serial.println(rpm);
   attachInterrupt(digitalPinToInterrupt(sensor_pin), hall_effect_interrupt, FALLING);
   
