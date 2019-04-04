@@ -52,7 +52,6 @@ const int sensor_pin = 7;
 int trigger_time(0);
 int last_trigger(0);
 int rpm(0);
-int rpm_count = 0;
 
 void setup() {
   // setup buttons
@@ -118,7 +117,7 @@ void control_function() {
 void loop() {
   // check actuator limits
   current_pos = analogRead(pot_pin);
-  if (current_pos >= POT_MAX || current_pos <= POT_MIN) {
+  if ((current_pos >= POT_MAX && u_k > 0) || (current_pos <= POT_MIN && u_k < 0)) {
     u_k = 0;
   }
 
