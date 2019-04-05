@@ -7,23 +7,10 @@
 #include <Servo.h>
 
 // buttons
-#define DEBOUNCE_DELAY 50
 const int button1_pin = 13;
-int button1_state = HIGH;
-int button1_last_state = HIGH;
-int button1_last_debounce(0);
 const int button2_pin = 12;
-int button2_state = HIGH;
-int button2_last_state = HIGH;
-int button2_last_debounce(0);
 const int button3_pin = 11;
-int button3_state = HIGH;
-int button3_last_state = HIGH;
-int button3_last_debounce(0);
 const int button4_pin = 10;
-int button4_state = HIGH;
-int button4_last_state = HIGH;
-int button4_last_debounce(0);
 
 // PWM constants
 #define PW_STOP 1510
@@ -42,21 +29,28 @@ const int actuator_pin = 9;
 #define POT_MARGIN 10
 #define POT_MIN 146 + POT_MARGIN
 #define POT_MAX 762 - POT_MARGIN
-const int pot_pin = A5;
+const int pot_pin = A0;
 int current_pos(0);
 int u_k(0);
 int u_k1(0);
+int lead_u_k1(0);
+int lead_u_k(0);
 int e_k(0);
 int e_k1(0);
 int r_k = MAX_TORQUE;
 const int controlPeriod = 20; // [ms]
 const double Ts = controlPeriod/1000; // controlPeriod [s]
-const double K = .367; // controller gain
-const double z_1 = .346; // lag compensator zero
-const double p_1 = .116; // lag compensator pole
-const double A = K*(z_1+2/Ts)/(p_1+2/Ts);
-const double B = K*(z_1-2/Ts)/(p_1+2/Ts);
-const double C = (p_1-2/Ts)/(p_1+2/Ts);
+const double K = 5; // controller gain
+const double lead_z = 5.602; // lead compensator zero
+const double lead_p = 11.43; // lead compensator pole
+const double lead_A = K*(lead_z+2/Ts)/(lead_p+2/Ts); // multiplied by e_k
+const double lead_B = K*(lead_z-2/Ts)/(lead_p+2/Ts); // multiplied by e_k1
+const double lead_C = (lead_p-2/Ts)/(lead_p+2/Ts); // multiplied by lead_u_k1
+const double lag_z = .9487; // lag compensator zero
+const double lag_p = .09487; // lag compensator pole
+const double lag_A = (lag_z+2/Ts)/(lag_p+2/Ts); // multiplied by lead_u_k
+const double lag_B = (lag_z-2/Ts)/(lag_p+2/Ts); // multiplied by lead_u_k1
+const double lag_C = (lag_p-2/Ts)/(lag_p+2/Ts); // multiplied by u_k1
 int lastControlTime(0);
 
 // hall effect sensor
@@ -87,7 +81,7 @@ void setup() {
   last_trigger = trigger_time;
 
   // create timer interrupt
-  OCR0A = 0xFF;
+  OCR0A = 0xAF;
   TIMSK0 |= _BV(OCIE0A);
 }
 
@@ -115,17 +109,21 @@ SIGNAL(TIMER0_COMPA_vect) {
 
 void control_function() {
 
-  // compute current error
+  // compute error
   e_k = r_k - rpm;
 
-  // compute control signal and write to actuator
-  u_k = A*e_k + B*e_k1 - C*e_k1;
+  // compute control signal
+  lead_u_k = lead_A*e_k + lead_B*e_k1 - lead_C*lead_u_k1;
+  u_k = lag_A*lead_u_k + lag_B*lead_u_k1 - lag_C*u_k1;
   int u_k_final = max(min(u_k, u_k_max), u_k_min);
+
+  // write to actuator
   Actuator.writeMicroseconds(u_k_final + PW_STOP);
 
   // update past values
-  u_k1 = u_k;
   e_k1 = e_k;
+  lead_u_k1 = lead_u_k;
+  u_k1 = u_k;
 }
 
 void loop() {
@@ -144,35 +142,13 @@ void loop() {
   attachInterrupt(digitalPinToInterrupt(sensor_pin), hall_effect_interrupt, FALLING);
 
   // check button presses
-  button1_state = debounce_button(digitalRead(button1_pin), button1_state, button1_last_state, button1_last_debounce); 
-  button2_state = debounce_button(digitalRead(button2_pin), button2_state, button2_last_state, button2_last_debounce);
-  button3_state = debounce_button(digitalRead(button3_pin), button3_state, button3_last_state, button3_last_debounce);
-  button4_state = debounce_button(digitalRead(button4_pin), button4_state, button4_last_state, button4_last_debounce);
-  
-  // update reference value
-  if (button1_state == LOW) {
+  if (digitalRead(button1_pin) == LOW) {
     r_k = MAX_TORQUE;
   }
-  if (button2_state == LOW) {
+  if (digitalRead(button2_pin) == LOW) {
     r_k = MAX_POWER;
   }
-  if (button3_state == LOW) {
+  if (digitalRead(button3_pin) == LOW) {
     r_k = 5000;
   }
-}
-
-bool debounce_button(const int reading, int &button_state, int &last_button_state , int &last_debounce) {
-  if (reading != last_button_state) {
-    last_debounce = millis();
-  }
-
-  if ((millis() - last_debounce) > DEBOUNCE_DELAY) {
-
-    if (reading != button_state) {
-      button_state = reading;
-    }
-  }
-
-  // save the reading. Next time through the loop, it'll be the lastButtonState:
-  last_button_state = reading;
 }
