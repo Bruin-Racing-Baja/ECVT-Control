@@ -7,10 +7,10 @@
 #include <Servo.h>
 
 // buttons
-const int button1_pin = 13;
-const int button2_pin = 12;
-const int button3_pin = 11;
-const int button4_pin = 10;
+const byte button1_pin = 13;
+const byte button2_pin = 12;
+const byte button3_pin = 11;
+const byte button4_pin = 10;
 
 // PWM constants
 #define PW_STOP 1510
@@ -25,11 +25,11 @@ const int u_k_max = PW_MAX - PW_STOP;
 
 // actuator
 Servo Actuator;
-const int actuator_pin = 9;
+const byte actuator_pin = 9;
 #define POT_MARGIN 10
 #define POT_MIN 146 + POT_MARGIN
 #define POT_MAX 762 - POT_MARGIN
-const int pot_pin = A0;
+const byte pot_pin = A0;
 int current_pos(0);
 int u_k(0);
 int u_k1(0);
@@ -55,7 +55,7 @@ int lastControlTime(0);
 
 // hall effect sensor
 #define NUM_MAGNETS 1
-const int sensor_pin = 3;
+const byte sensor_pin = 3;
 int trigger_time(0);
 int last_trigger(0);
 int rpm(0);
