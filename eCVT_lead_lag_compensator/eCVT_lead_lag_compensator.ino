@@ -2,7 +2,11 @@
 // this sketch runs a lag compensator on the ecvt
 //
 // author: Tyler McCown (tylermccown@engineering.ucla.edu)
-// created: 4/2/19
+// created: 4/2/19 
+//
+// tweaked by Iou Sheng Chang (iouschang@engineering.ucla.edu)
+// tweak date: 4/5/19
+
 
 #include <Servo.h>
 
@@ -57,13 +61,13 @@ unsigned int lastControlTime(0);
 
 // hall effect sensor
 #define NUM_MAGNETS 1
-const byte sensor_pin = 6;
-unsigned int trigger_time(0);
-unsigned int last_trigger(0);
-unsigned int rpm(0);
-int HighLow(HIGH);
-bool RPMCount(false);
-int delta_t(0);
+#define sensor_pin 6
+double trigger_time(0);
+double last_trigger(0);
+double delta_t(0);
+double rpm(0);
+double HighLow(0);
+double RPMCount(0);
 
 void setup() {
   // setup buttons
@@ -108,16 +112,13 @@ SIGNAL(TIMER0_COMPA_vect) {
     Serial.print(current_pos);
     Serial.print(" ");
     Serial.print(millis());
-    Serial.print(" ");
-    Serial.print(delta_t);
     Serial.print("\n");
-    
   }
 }
 
 void control_function() {
-
-  RPMCalc();
+  // compute rpm
+//  RPMCalc();
 
   // compute error
   e_k = r_k - rpm;
@@ -125,7 +126,8 @@ void control_function() {
   // compute control signal
   lead_u_k = lead_A*e_k + lead_B*e_k1 - lead_C*lead_u_k1;
   u_k = lag_A*lead_u_k + lag_B*lead_u_k1 - lag_C*u_k1;
-  u_k = max(min(u_k, u_k_max), u_k_min);
+//  u_k = max(min(u_k, u_k_max), u_k_min);
+  u_k = constrain(u_k,u_k_min,u_k_max); 
 
   // write to actuator
   Actuator.writeMicroseconds(u_k + PW_STOP);
@@ -147,11 +149,10 @@ void RPMCalc() {
     HighLow = 1;
   }
   if (RPMCount == 1) {
-//    trigger_time = micros();
-    delta_t = micros() - last_trigger;
-    rpm = 60000000.0 / delta_t;
+    trigger_time = millis();
+    rpm = 60000.0 / (trigger_time - last_trigger);
     RPMCount = 0;
-    last_trigger = micros();
+    last_trigger = trigger_time;
   }
 }
 
@@ -163,7 +164,7 @@ void loop() {
   }
 
   // check rpm
-//  RPMCalc();
+  RPMCalc();
 
   // check button presses
   if (digitalRead(button1_pin) == LOW) {
