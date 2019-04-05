@@ -1,4 +1,4 @@
-// ecvt_lag_compensator.ino
+// ecvt_lead_lag_compensator.ino
 // this sketch runs a lag compensator on the ecvt
 //
 // author: Tyler McCown (tylermccown@engineering.ucla.edu)
