@@ -10,8 +10,6 @@ bool RPMCount = false;
 void setup() {
   pinMode(sensor_pin, INPUT);
   Serial.begin(9600);
-
-//  attachInterrupt(digitalPinToInterrupt(sensor_pin), calculate_rpm, FALLING);
   last_trigger = millis();
 }
 
@@ -31,8 +29,9 @@ void RPMCalc() {
     HighLow = 1;
   }
   if (RPMCount == 1) {
-    trigger_time = millis();
-    rpm = (60000.0 / (trigger_time - last_trigger));
+    trigger_time = micros();
+    delta_t = trigger_time - last_trigger;
+    rpm = 60000000.0 / delta_t;
     RPMCount = 0;
     last_trigger = trigger_time;
   }

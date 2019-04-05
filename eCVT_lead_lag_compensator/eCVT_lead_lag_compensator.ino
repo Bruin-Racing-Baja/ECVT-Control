@@ -31,6 +31,8 @@ const byte actuator_pin = 9;
 #define POT_MAX 762 - POT_MARGIN
 const byte pot_pin = A0;
 int current_pos(0);
+
+// controller
 int u_k(0);
 int u_k1(0);
 int lead_u_k1(0);
@@ -55,10 +57,13 @@ unsigned int lastControlTime(0);
 
 // hall effect sensor
 #define NUM_MAGNETS 1
-const byte sensor_pin = 3;
+const byte sensor_pin = 6;
 unsigned int trigger_time(0);
 unsigned int last_trigger(0);
 unsigned int rpm(0);
+int HighLow(HIGH);
+bool RPMCount(false);
+int delta_t(0);
 
 void setup() {
   // setup buttons
@@ -74,21 +79,21 @@ void setup() {
   current_pos = analogRead(pot_pin);
 
   // create hall effect interrupt
-  pinMode(sensor_pin, INPUT);
-  attachInterrupt(digitalPinToInterrupt(sensor_pin), hall_effect_interrupt, FALLING);
-  interrupts();
-  trigger_time = millis();
-  last_trigger = trigger_time;
+//  pinMode(sensor_pin, INPUT);
+//  attachInterrupt(digitalPinToInterrupt(sensor_pin), hall_effect_interrupt, FALLING);
+//  interrupts();
+//  trigger_time = millis();
+//  last_trigger = trigger_time;
 
   // create timer interrupt
   OCR0A = 0xAF;
   TIMSK0 |= _BV(OCIE0A);
 }
 
-void hall_effect_interrupt() {
-  last_trigger = trigger_time;
-  trigger_time = millis();
-}
+//void hall_effect_interrupt() {
+//  last_trigger = trigger_time;
+//  trigger_time = millis();
+//}
 
 SIGNAL(TIMER0_COMPA_vect) {
   int current_millis = millis();
@@ -96,18 +101,23 @@ SIGNAL(TIMER0_COMPA_vect) {
     control_function();
     lastControlTime = current_millis;
 
-//    Serial.print(u_k);
-//    Serial.print(" ");
-//    Serial.print(rpm);
-//    Serial.print(" ");
-//    Serial.print(current_pos);
-//    Serial.print(" ");
-//    Serial.print(millis());
-//    Serial.print("\n");
+    Serial.print(u_k);
+    Serial.print(" ");
+    Serial.print(rpm);
+    Serial.print(" ");
+    Serial.print(current_pos);
+    Serial.print(" ");
+    Serial.print(millis());
+    Serial.print(" ");
+    Serial.print(delta_t);
+    Serial.print("\n");
+    
   }
 }
 
 void control_function() {
+
+  RPMCalc();
 
   // compute error
   e_k = r_k - rpm;
@@ -115,15 +125,34 @@ void control_function() {
   // compute control signal
   lead_u_k = lead_A*e_k + lead_B*e_k1 - lead_C*lead_u_k1;
   u_k = lag_A*lead_u_k + lag_B*lead_u_k1 - lag_C*u_k1;
-  int u_k_final = max(min(u_k, u_k_max), u_k_min);
+  u_k = max(min(u_k, u_k_max), u_k_min);
 
   // write to actuator
-  Actuator.writeMicroseconds(u_k_final + PW_STOP);
+  Actuator.writeMicroseconds(u_k + PW_STOP);
 
   // update past values
   e_k1 = e_k;
   lead_u_k1 = lead_u_k;
   u_k1 = u_k;
+}
+
+void RPMCalc() {
+  if (digitalRead(sensor_pin) == LOW) {
+    if (HighLow == 1) {
+      RPMCount = 1;
+    }
+    HighLow = 0;
+  }
+  if (digitalRead(sensor_pin) == HIGH) {
+    HighLow = 1;
+  }
+  if (RPMCount == 1) {
+//    trigger_time = micros();
+    delta_t = micros() - last_trigger;
+    rpm = 60000000.0 / delta_t;
+    RPMCount = 0;
+    last_trigger = micros();
+  }
 }
 
 void loop() {
@@ -133,13 +162,8 @@ void loop() {
     u_k = 0;
   }
 
-  // calculate rpm
-  detachInterrupt(digitalPinToInterrupt(sensor_pin));
-  int new_rpm = 60000.0 / NUM_MAGNETS / (trigger_time - last_trigger);
-  if (new_rpm != 0) {
-    rpm = new_rpm;
-  }
-  attachInterrupt(digitalPinToInterrupt(sensor_pin), hall_effect_interrupt, FALLING);
+  // check rpm
+//  RPMCalc();
 
   // check button presses
   if (digitalRead(button1_pin) == LOW) {
