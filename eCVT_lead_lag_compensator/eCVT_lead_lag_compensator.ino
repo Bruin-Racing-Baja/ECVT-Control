@@ -65,7 +65,7 @@ unsigned long lastControlTime(0);
 unsigned long trigger_time(0);
 unsigned long last_trigger(0);
 unsigned long delta_t(0);
-double rpm(0);
+unsigned int rpm(0);
 double HighLow(0);
 double RPMCount(0);
 
@@ -150,7 +150,10 @@ void RPMCalc() {
   }
   if (RPMCount == 1) {
     trigger_time = millis();
-    rpm = 60000.0 / (trigger_time - last_trigger);
+    unsigned short new_rpm = 60000.0 / (trigger_time - last_trigger);
+    if (new_rpm > 0 && new_rpm < 5000) {
+      rpm = new_rpm;
+    }
     RPMCount = 0;
     last_trigger = trigger_time;
   }
