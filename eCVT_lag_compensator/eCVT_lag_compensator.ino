@@ -38,9 +38,9 @@ int lead_u_k(0);
 int e_k(0);
 int e_k1(0);
 int r_k = MAX_TORQUE;
-const int controlPeriod = 20; // [ms]
+const byte controlPeriod = 20; // [ms]
 const double Ts = controlPeriod/1000; // controlPeriod [s]
-const double K = 5; // controller gain
+const byte K = 5; // controller gain
 const double lead_z = 5.602; // lead compensator zero
 const double lead_p = 11.43; // lead compensator pole
 const double lead_A = K*(lead_z+2/Ts)/(lead_p+2/Ts); // multiplied by e_k
@@ -51,14 +51,14 @@ const double lag_p = .09487; // lag compensator pole
 const double lag_A = (lag_z+2/Ts)/(lag_p+2/Ts); // multiplied by lead_u_k
 const double lag_B = (lag_z-2/Ts)/(lag_p+2/Ts); // multiplied by lead_u_k1
 const double lag_C = (lag_p-2/Ts)/(lag_p+2/Ts); // multiplied by u_k1
-int lastControlTime(0);
+unsigned int lastControlTime(0);
 
 // hall effect sensor
 #define NUM_MAGNETS 1
 const byte sensor_pin = 3;
-int trigger_time(0);
-int last_trigger(0);
-int rpm(0);
+unsigned int trigger_time(0);
+unsigned int last_trigger(0);
+unsigned int rpm(0);
 
 void setup() {
   // setup buttons
