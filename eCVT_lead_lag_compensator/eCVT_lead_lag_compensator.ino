@@ -57,14 +57,14 @@ const double lag_p = .09487; // lag compensator pole
 const double lag_A = (lag_z+2/Ts)/(lag_p+2/Ts); // multiplied by lead_u_k
 const double lag_B = (lag_z-2/Ts)/(lag_p+2/Ts); // multiplied by lead_u_k1
 const double lag_C = (lag_p-2/Ts)/(lag_p+2/Ts); // multiplied by u_k1
-unsigned int lastControlTime(0);
+unsigned long lastControlTime(0);
 
 // hall effect sensor
 #define NUM_MAGNETS 1
 #define sensor_pin 6
-double trigger_time(0);
-double last_trigger(0);
-double delta_t(0);
+unsigned long trigger_time(0);
+unsigned long last_trigger(0);
+unsigned long delta_t(0);
 double rpm(0);
 double HighLow(0);
 double RPMCount(0);
