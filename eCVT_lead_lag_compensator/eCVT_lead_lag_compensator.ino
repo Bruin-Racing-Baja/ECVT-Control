@@ -1,4 +1,4 @@
-// ecvt_lead_lag_compensator.ino
+ // ecvt_lead_lag_compensator.ino
 // this sketch runs a lag compensator on the ecvt
 //
 // author: Tyler McCown (tylermccown@engineering.ucla.edu)
@@ -37,15 +37,15 @@ const byte pot_pin = A0;
 int current_pos(0);
 
 // controller
-int u_k(0);
-int u_k1(0);
-int lead_u_k1(0);
-int lead_u_k(0);
+int r_k = MAX_TORQUE;
 int e_k(0);
 int e_k1(0);
-int r_k = MAX_TORQUE;
+int lead_u_k(0);
+int lead_u_k1(0);
+int u_k(0);
+int u_k1(0);
 const byte controlPeriod = 20; // [ms]
-const double Ts = controlPeriod/1000; // controlPeriod [s]
+const double Ts = controlPeriod/1000.0; // controlPeriod [s]
 const byte K = 5; // controller gain
 const double lead_z = 5.602; // lead compensator zero
 const double lead_p = 11.43; // lead compensator pole
@@ -70,6 +70,10 @@ double HighLow(0);
 double RPMCount(0);
 
 void setup() {
+
+  // open serial connection
+  Serial.begin(9600);
+  
   // setup buttons
   pinMode(button1_pin, INPUT);
   pinMode(button2_pin, INPUT);
@@ -117,9 +121,7 @@ SIGNAL(TIMER0_COMPA_vect) {
 }
 
 void control_function() {
-  // compute rpm
-//  RPMCalc();
-
+  
   // compute error
   e_k = r_k - rpm;
 
@@ -127,7 +129,7 @@ void control_function() {
   lead_u_k = lead_A*e_k + lead_B*e_k1 - lead_C*lead_u_k1;
   u_k = lag_A*lead_u_k + lag_B*lead_u_k1 - lag_C*u_k1;
 //  u_k = max(min(u_k, u_k_max), u_k_min);
-  u_k = constrain(u_k,u_k_min,u_k_max); 
+  u_k = constrain(u_k, u_k_min, u_k_max); 
 
   // write to actuator
   Actuator.writeMicroseconds(u_k + PW_STOP);
@@ -141,21 +143,18 @@ void control_function() {
 void RPMCalc() {
   if (digitalRead(sensor_pin) == LOW) {
     if (HighLow == 1) {
-      RPMCount = 1;
+      trigger_time = millis();
+      unsigned short new_rpm = 60000.0 / (trigger_time - last_trigger);
+      if (new_rpm > 0 && new_rpm < 5000) {
+        rpm = new_rpm;
+      }
+      RPMCount = 0;
+      last_trigger = trigger_time;
     }
     HighLow = 0;
   }
   if (digitalRead(sensor_pin) == HIGH) {
     HighLow = 1;
-  }
-  if (RPMCount == 1) {
-    trigger_time = millis();
-    unsigned short new_rpm = 60000.0 / (trigger_time - last_trigger);
-    if (new_rpm > 0 && new_rpm < 5000) {
-      rpm = new_rpm;
-    }
-    RPMCount = 0;
-    last_trigger = trigger_time;
   }
 }
 
