@@ -7,14 +7,26 @@
 // tweaked by Iou Sheng Chang (iouschang@engineering.ucla.edu)
 // tweak date: 4/5/19
 
-
+#include <Wire.h>
 #include <Servo.h>
+
+// display setup
+#include <Wire.h>
+#include <I2C_LCD.h>
+I2C_LCD LCD;
+uint8_t I2C_LCD_ADDRESS = 0x51;
+extern GUI_Bitmap_t bmBruinRacing;
+extern GUI_Bitmap_t bmBearHead;
+const int refreshPeriod = 1000; // display refresh time [ms]
+int lastRefreshTime(0);
 
 // buttons
 const byte button1_pin = 13;
 const byte button2_pin = 12;
 const byte button3_pin = 11;
 const byte button4_pin = 10;
+int mode = 0;
+char mode_names[3][7] = {"TORQUE", "POWER", "LAUNCH"};
 
 // PWM constants
 #define PW_STOP 1510
@@ -47,13 +59,13 @@ int u_k1(0);
 const byte controlPeriod = 20; // [ms]
 const double Ts = controlPeriod/1000.0; // controlPeriod [s]
 const byte K = 5; // controller gain
-const double lead_z = 5.602; // lead compensator zero
-const double lead_p = 11.43; // lead compensator pole
+const double lead_z = 4.4212; // lead compensator zero
+const double lead_p = 61.579; // lead compensator pole
 const double lead_A = K*(lead_z+2/Ts)/(lead_p+2/Ts); // multiplied by e_k
 const double lead_B = K*(lead_z-2/Ts)/(lead_p+2/Ts); // multiplied by e_k1
 const double lead_C = (lead_p-2/Ts)/(lead_p+2/Ts); // multiplied by lead_u_k1
-const double lag_z = .9487; // lag compensator zero
-const double lag_p = .09487; // lag compensator pole
+const double lag_z = 8.2424; // lag compensator zero
+const double lag_p = 1.0919; // lag compensator pole
 const double lag_A = (lag_z+2/Ts)/(lag_p+2/Ts); // multiplied by lead_u_k
 const double lag_B = (lag_z-2/Ts)/(lag_p+2/Ts); // multiplied by lead_u_k1
 const double lag_C = (lag_p-2/Ts)/(lag_p+2/Ts); // multiplied by u_k1
@@ -73,6 +85,15 @@ void setup() {
 
   // open serial connection
   Serial.begin(9600);
+
+  // init I2C interface
+  Wire.begin();
+  LCD.WorkingModeConf(OFF, ON, WM_BitmapMode);
+
+  // clear screen and display sweaty bruin
+  LCD.CleanAll(WHITE);
+  LCD.DrawScreenAreaAt(&bmBruinRacing, 0, 1);
+  delay(1000);
   
   // setup buttons
   pinMode(button1_pin, INPUT);
@@ -92,6 +113,15 @@ void setup() {
 //  interrupts();
 //  trigger_time = millis();
 //  last_trigger = trigger_time;
+
+  // configure LCD to write text
+  LCD.CleanAll(WHITE);
+  LCD.DrawScreenAreaAt(&bmBearHead, 0, 0);
+  LCD.WorkingModeConf(OFF, ON, WM_CharMode);
+  LCD.FontModeConf(Font_6x8, FM_MNL_AAA, BLACK_NO_BAC);
+  LCD.DispStringAt("MODE:", 68, 5);
+  LCD.DispStringAt("RPM:", 68, 35);
+//  LCD.FontModeConf(Font_8x16_2, FM_MNL_AAA, BLACK_BAC);
 
   // create timer interrupt
   OCR0A = 0xAF;
@@ -158,6 +188,18 @@ void RPMCalc() {
   }
 }
 
+void update_display() {
+  LCD.WorkingModeConf(OFF, ON, WM_BitmapMode);
+  LCD.DrawScreenAreaAt(&bmBearHead, 0, 0);
+  LCD.WorkingModeConf(OFF, ON, WM_CharMode);
+  LCD.DispStringAt("MODE:", 68, 5);
+  LCD.DispStringAt("RPM:", 68, 35);
+  LCD.DispStringAt(mode_names[mode], 78, 15);
+  char rpm_str[5];
+  itoa(rpm, rpm_str, 10);
+  LCD.DispStringAt(rpm_str, 78, 45);
+}
+
 void loop() {
   // check actuator limits
   current_pos = analogRead(pot_pin);
@@ -177,5 +219,11 @@ void loop() {
   }
   if (digitalRead(button3_pin) == LOW) {
     r_k = 5000;
+  }
+
+  int current_millis = millis();
+  if (current_millis - lastRefreshTime >= refreshPeriod) {
+    update_display();
+    lastRefreshTime = current_millis;
   }
 }
