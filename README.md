@@ -11,9 +11,9 @@ Microcontroller code for Bruin Racing's Baja SAE team.
 - 5 (red): motor -
 
 ## potentiometer limits
-- min pot reading: 146 (on car)
+- min pot reading: 125 (on car)
 - max pot reading: 762 (on car)
-- engagement starts at 460
+- engagement starts at 509
 
 ## PWM values
 - max: 2000
