@@ -7,12 +7,14 @@
 clear;
 clc;
 
+% PWM values
 PW_STOP = 1510;
 PW_MIN = 1000;
 PW_MAX = 2000;
 u_k_min = PW_MIN - PW_STOP;
 u_k_max = PW_MAX - PW_STOP;
 
+% controller values
 r_k = 2700; % reference rpm value
 rpm = 3700; % initial rpm value
 K = 5; % controller gain
@@ -21,28 +23,22 @@ lead_p = 11.43; % lead pole
 lag_z = .9487; % lag zero
 lag_p = .09487; % lag pole
 Ts = .02;
-T_final = 10;
-
-Ts = .02;
-K = 5;
-lead_z = 5.602;
-lead_p = 11.43;
-lead_A = K*(lead_z+2/Ts)/(lead_p+2/Ts)
-lead_B = K*(lead_z-2/Ts)/(lead_p+2/Ts)
-lead_C = (lead_p-2/Ts)/(lead_p+2/Ts)
-lag_z = .9487;
-lag_p = .09487;
-lag_A = (lag_z+2/Ts)/(lag_p+2/Ts)
-lag_B = (lag_z-2/Ts)/(lag_p+2/Ts)
-lag_C = (lag_p-2/Ts)/(lag_p+2/Ts)
+lead_A = K*(lead_z+2/Ts)/(lead_p+2/Ts);
+lead_B = K*(lead_z-2/Ts)/(lead_p+2/Ts);
+lead_C = (lead_p-2/Ts)/(lead_p+2/Ts);
+lag_A = (lag_z+2/Ts)/(lag_p+2/Ts);
+lag_B = (lag_z-2/Ts)/(lag_p+2/Ts);
+lag_C = (lag_p-2/Ts)/(lag_p+2/Ts);
 
 u_k = 0;
 u_k1 = 0;
 u_k2 = 0;
-e_k2 = 0;
 e_k = 0;
 e_k1 = 0;
+e_k2 = 0;
 
+% simulation parameters
+T_final = 10;
 u_ks = zeros(T_final/Ts, 1);
 
 %% combined lead-lag
