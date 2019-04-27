@@ -20,12 +20,14 @@
 //const int refreshPeriod = 1000; // display refresh time [ms]
 //int lastRefreshTime(0);
 
+bool good_boy;
+
 // buttons
 const byte button1_pin = 13;
 const byte button2_pin = 12;
 const byte button3_pin = 11;
 const byte button4_pin = 10;
-int mode = 0;
+byte mode = 0;
 char mode_names[3][7] = {"TORQUE", "POWER", "LAUNCH"};
 
 // PWM constants
@@ -44,9 +46,9 @@ const int u_k_max = PW_MAX - PW_STOP;
 Servo Actuator;
 const byte actuator_pin = 9;
 #define POT_MARGIN 10
-int POT_MIN = 125 + POT_MARGIN;
-int POT_MAX = 530 - POT_MARGIN;
-int POT_ENGAGE = 509;
+const int POT_MIN = 125 + POT_MARGIN;
+const int POT_MAX = 530 - POT_MARGIN;
+const int POT_ENGAGE = 509;
 const byte pot_pin = A0;
 int current_pos(0);
 
@@ -60,29 +62,42 @@ int u_k(0);
 int u_k1(0);
 const byte controlPeriod = 20; // [ms]
 const double Ts = controlPeriod/1000.0; // controlPeriod [s]
-const byte K = 25; // controller gain
-const double lead_z = 4.4212; // lead compensator zero
-const double lead_p = 61.579; // lead compensator pole
+const byte K = 5; // controller gain
+const double lead_z = 5.6; // lead compensator zero
+const double lead_p = 11.4; // lead compensator pole
 const double lead_A = K*(lead_z+2/Ts)/(lead_p+2/Ts); // multiplied by e_k
 const double lead_B = K*(lead_z-2/Ts)/(lead_p+2/Ts); // multiplied by e_k1
 const double lead_C = (lead_p-2/Ts)/(lead_p+2/Ts); // multiplied by lead_u_k1
-const double lag_z = 8.2424; // lag compensator zero
-const double lag_p = 1.0919; // lag compensator pole
+const double lag_z = 0.949; // lag compensator zero
+const double lag_p = 0.0949; // lag compensator pole
 const double lag_A = (lag_z+2/Ts)/(lag_p+2/Ts); // multiplied by lead_u_k
 const double lag_B = (lag_z-2/Ts)/(lag_p+2/Ts); // multiplied by lead_u_k1
 const double lag_C = (lag_p-2/Ts)/(lag_p+2/Ts); // multiplied by u_k1
 unsigned long lastControlTime(0);
 
 // hall effect sensor
-#define NUM_MAGNETS 1
-#define sensor_pin 6
+#define HF_HIGH 800
+#define HF_LOW 100
+bool im_high = false;
+bool im_low = false;
+const byte sensor_pin = A5;
 unsigned long trigger_time(0);
 unsigned long last_trigger(0);
 unsigned long delta_t(0);
 unsigned int rpm(0);
-double HighLow(0);
+int index = 0;
+const int num_readings = 4;
+unsigned int readings[num_readings];
+
+void init_readings() {
+  for (int i = 0; i < num_readings; i++) {
+    readings[i] = 0;
+  }
+}
 
 void setup() {
+
+  good_boy = true;
 
   // open serial connection
   Serial.begin(9600);
@@ -97,10 +112,10 @@ void setup() {
 //  delay(1000);
   
   // setup buttons
-  pinMode(button1_pin, INPUT);
-  pinMode(button2_pin, INPUT);
-  pinMode(button3_pin, INPUT);
-  pinMode(button4_pin, INPUT);
+  // pinMode(button1_pin, INPUT);
+  // pinMode(button2_pin, INPUT);
+  // pinMode(button3_pin, INPUT);
+  // pinMode(button4_pin, INPUT);
 
   // setup actuator
   Actuator.attach(actuator_pin);
@@ -108,12 +123,10 @@ void setup() {
   pinMode(pot_pin, INPUT);
   current_pos = analogRead(pot_pin);
 
-  // create hall effect interrupt
-//  pinMode(sensor_pin, INPUT);
-//  attachInterrupt(digitalPinToInterrupt(sensor_pin), hall_effect_interrupt, FALLING);
-//  interrupts();
-//  trigger_time = millis();
-//  last_trigger = trigger_time;
+  // setup hall effect
+  pinMode(sensor_pin, INPUT);
+  init_readings();
+  last_trigger = millis();
 
   // configure LCD to write text
 //  LCD.CleanAll(WHITE);
@@ -140,35 +153,54 @@ SIGNAL(TIMER0_COMPA_vect) {
     control_function();
     lastControlTime = current_millis;
 
-    Serial.print(r_k);
-    Serial.print(" ");
-    Serial.print(u_k);
-    Serial.print(" ");
+//    Serial.print(r_k);
+//    Serial.print(" ");
+//    Serial.print(u_k);
+//    Serial.print(" ");
     Serial.print(rpm);
     Serial.print(" ");
-    Serial.print(current_pos);
+    Serial.print(rpm_average());
+    Serial.print(" ");
+//    Serial.print(current_pos);
 //    Serial.print(" ");
 //    Serial.print(millis());
     Serial.print("\n");
   }
 }
 
+unsigned int rpm_average() {
+  unsigned int sum = 0;
+  for (int i = 0; i < num_readings; i++) {
+    sum += readings[i];
+  }
+  return (sum / num_readings);
+}
+
+//void hall_effect_interrupt() {
+//  trigger_time = millis();
+//  unsigned short new_rpm = 60000.0 / (trigger_time - last_trigger);
+//  rpm = new_rpm;
+//  readings[index] = rpm;
+//  index = (index + 1) % num_readings;
+//  last_trigger = trigger_time;
+//}
+
 void control_function() {
   
-  // compute error
+  // compute error;
+//  rpm = rpm_average();
   e_k = r_k - rpm;
 
   // compute control signal
   lead_u_k = lead_A*e_k + lead_B*e_k1 - lead_C*lead_u_k1;
   u_k = lag_A*lead_u_k + lag_B*lead_u_k1 - lag_C*u_k1;
-//  u_k = max(min(u_k, u_k_max), u_k_min);
   u_k = constrain(u_k, u_k_min, u_k_max);
 
-  if (rpm < MAX_TORQUE) {
-    POT_MAX = 530 - POT_MARGIN;
-  } else {
-    POT_MAX = POT_ENGAGE + POT_MARGIN;
-  }
+  // if (rpm < MAX_TORQUE) {
+  //   POT_MAX = 530 - POT_MARGIN;
+  // } else {
+  //   POT_MAX = POT_ENGAGE + POT_MARGIN;
+  // }
 
   // check actuator limits
   current_pos = analogRead(pot_pin);
@@ -187,23 +219,6 @@ void control_function() {
   u_k1 = u_k;
 }
 
-void RPMCalc() {
-  if (digitalRead(sensor_pin) == LOW) {
-    if (HighLow == 1) {
-      trigger_time = millis();
-      unsigned short new_rpm = 60000.0 / (trigger_time - last_trigger);
-      if (new_rpm >= 0 && new_rpm < 5000) {
-        rpm = new_rpm;
-      }
-      last_trigger = trigger_time;
-    }
-    HighLow = 0;
-  }
-  if (digitalRead(sensor_pin) == HIGH) {
-    HighLow = 1;
-  }
-}
-
 //void update_display() {
 //  LCD.WorkingModeConf(OFF, ON, WM_BitmapMode);
 //  LCD.DrawScreenAreaAt(&bmBearHead, 0, 0);
@@ -219,19 +234,35 @@ void RPMCalc() {
 void loop() {
 
   // check rpm
-  RPMCalc();
+  if (analogRead(A5) > HF_HIGH) {
+    im_high = true;
+  } 
+  if (im_high && (analogRead(A5) < HF_LOW)) {
+    im_low = true;
+  }
+  if (im_high && im_low) {
+    trigger_time = millis();
+    delta_t = trigger_time - last_trigger;
+    rpm = 60000.0 / delta_t;
+    readings[index] = rpm;
+    index = (index + 1) % num_readings;
+    last_trigger = trigger_time;
+    im_high = false;
+    im_low = false;
+  }
 
   // check button presses
-  if (digitalRead(button1_pin) == LOW) {
-    r_k = MAX_TORQUE;
-  }
-  if (digitalRead(button2_pin) == LOW) {
-    r_k = MAX_POWER;
-  }
-  if (digitalRead(button3_pin) == LOW) {
-    r_k = 5000;
-  }
+  // if (digitalRead(button1_pin) == LOW) {
+  //   r_k = MAX_TORQUE;
+  // }
+  // if (digitalRead(button2_pin) == LOW) {
+  //   r_k = MAX_POWER;
+  // }
+  // if (digitalRead(button3_pin) == LOW) {
+  //   r_k = 5000;
+  // }
 
+  // refresh display
 //  int current_millis = millis();
 //  if (current_millis - lastRefreshTime >= refreshPeriod) {
 //    update_display();
