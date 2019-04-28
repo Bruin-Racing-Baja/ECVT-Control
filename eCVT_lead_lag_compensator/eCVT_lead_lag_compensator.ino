@@ -20,8 +20,6 @@
 //const int refreshPeriod = 1000; // display refresh time [ms]
 //int lastRefreshTime(0);
 
-bool good_boy;
-
 // buttons
 const byte button1_pin = 13;
 const byte button2_pin = 12;
@@ -46,15 +44,16 @@ const int u_k_max = PW_MAX - PW_STOP;
 Servo Actuator;
 const byte actuator_pin = 9;
 #define POT_MARGIN 10
-const int POT_MIN = 125 + POT_MARGIN;
-const int POT_MAX = 530 - POT_MARGIN;
-const int POT_ENGAGE = 509;
+int POT_MIN = 107 + POT_MARGIN;
+int POT_MAX = 530 - POT_MARGIN;
+int POT_ENGAGE = 509;
 const byte pot_pin = A0;
 int current_pos(0);
 
 // controller
 int r_k = MAX_TORQUE;
 int e_k(0);
+int e_k_sum(0);
 int e_k1(0);
 int lead_u_k(0);
 int lead_u_k1(0);
@@ -79,25 +78,23 @@ unsigned long lastControlTime(0);
 #define HF_HIGH 800
 #define HF_LOW 100
 bool im_high = false;
-bool im_low = false;
-const byte sensor_pin = A5;
+const byte sensor_pin = A4;
 unsigned long trigger_time(0);
 unsigned long last_trigger(0);
 unsigned long delta_t(0);
 unsigned int rpm(0);
+unsigned int rpm_ave(0);
 int index = 0;
 const int num_readings = 4;
 unsigned int readings[num_readings];
 
-void init_readings() {
-  for (int i = 0; i < num_readings; i++) {
-    readings[i] = 0;
-  }
-}
+void init_readings();
+unsigned int rpm_average();
 
 void setup() {
 
-  good_boy = true;
+  // arduino is a good boy
+  bool good_boy = true;
 
   // open serial connection
   Serial.begin(9600);
@@ -142,11 +139,6 @@ void setup() {
   TIMSK0 |= _BV(OCIE0A);
 }
 
-//void hall_effect_interrupt() {
-//  last_trigger = trigger_time;
-//  trigger_time = millis();
-//}
-
 SIGNAL(TIMER0_COMPA_vect) {
   int current_millis = millis();
   if (current_millis - lastControlTime >= controlPeriod) {
@@ -155,16 +147,22 @@ SIGNAL(TIMER0_COMPA_vect) {
 
 //    Serial.print(r_k);
 //    Serial.print(" ");
-//    Serial.print(u_k);
+   Serial.print(u_k);
+   Serial.print(" ");
+    // Serial.print(rpm);
+    // Serial.print(" ");
+    Serial.print(rpm_ave);
 //    Serial.print(" ");
-    Serial.print(rpm);
-    Serial.print(" ");
-    Serial.print(rpm_average());
-    Serial.print(" ");
-//    Serial.print(current_pos);
-//    Serial.print(" ");
-//    Serial.print(millis());
+//   Serial.print(current_pos);
+  //  Serial.print(" ");
+  //  Serial.print(millis());
     Serial.print("\n");
+  }
+}
+
+void init_readings() {
+  for (int i = 0; i < num_readings; i++) {
+    readings[i] = 0;
   }
 }
 
@@ -176,39 +174,24 @@ unsigned int rpm_average() {
   return (sum / num_readings);
 }
 
-//void hall_effect_interrupt() {
-//  trigger_time = millis();
-//  unsigned short new_rpm = 60000.0 / (trigger_time - last_trigger);
-//  rpm = new_rpm;
-//  readings[index] = rpm;
-//  index = (index + 1) % num_readings;
-//  last_trigger = trigger_time;
-//}
-
 void control_function() {
   
   // compute error;
-//  rpm = rpm_average();
-  e_k = r_k - rpm;
+  rpm_ave = rpm_average();
+  e_k = r_k - rpm_ave;
+  e_k_sum = constrain(e_k_sum + e_k, u_k_min, u_k_max);
 
   // compute control signal
-  lead_u_k = lead_A*e_k + lead_B*e_k1 - lead_C*lead_u_k1;
-  u_k = lag_A*lead_u_k + lag_B*lead_u_k1 - lag_C*u_k1;
+   lead_u_k = lead_A*e_k + lead_B*e_k1 - lead_C*lead_u_k1;
+   u_k = lag_A*lead_u_k + lag_B*lead_u_k1 - lag_C*u_k1;
   u_k = constrain(u_k, u_k_min, u_k_max);
 
-  // if (rpm < MAX_TORQUE) {
-  //   POT_MAX = 530 - POT_MARGIN;
-  // } else {
-  //   POT_MAX = POT_ENGAGE + POT_MARGIN;
-  // }
-
-  // check actuator limits
-  current_pos = analogRead(pot_pin);
-  if (current_pos >= POT_MAX) {
-    u_k = -u_k_limit;
-  } else if (current_pos <= POT_MIN) {
-    u_k = u_k_limit;
-  }
+//  // check actuator limits
+//  if (current_pos >= POT_MAX) {
+//    u_k = -u_k_limit;
+//  } else if (current_pos <= POT_MIN) {
+//    u_k = u_k_limit;
+//  }
 
   // write to actuator
   Actuator.writeMicroseconds(u_k + PW_STOP);
@@ -233,14 +216,15 @@ void control_function() {
 
 void loop() {
 
+  // update pot position
+  current_pos = analogRead(pot_pin);
+
   // check rpm
-  if (analogRead(A5) > HF_HIGH) {
+  int reading = analogRead(sensor_pin);
+  if (reading > HF_HIGH) {
     im_high = true;
   } 
-  if (im_high && (analogRead(A5) < HF_LOW)) {
-    im_low = true;
-  }
-  if (im_high && im_low) {
+  if (im_high && (reading < HF_LOW)) {
     trigger_time = millis();
     delta_t = trigger_time - last_trigger;
     rpm = 60000.0 / delta_t;
@@ -248,18 +232,20 @@ void loop() {
     index = (index + 1) % num_readings;
     last_trigger = trigger_time;
     im_high = false;
-    im_low = false;
   }
 
   // check button presses
   // if (digitalRead(button1_pin) == LOW) {
   //   r_k = MAX_TORQUE;
+  //   mode = 0;
   // }
   // if (digitalRead(button2_pin) == LOW) {
   //   r_k = MAX_POWER;
+  //   mode = 1;
   // }
   // if (digitalRead(button3_pin) == LOW) {
   //   r_k = 5000;
+  //   mode = 2;
   // }
 
   // refresh display
