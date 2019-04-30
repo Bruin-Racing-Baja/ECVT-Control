@@ -4,7 +4,7 @@
 #define UK_MAX 2000
 #define UK_MIN 1000
 
-int uk = 1560;
+int uk = 1400;
 
 const int pin_pot = A0;
 const int pin_actuator = 9;
@@ -12,6 +12,8 @@ const int pin_actuator = 9;
 Servo Actuator;
 
 void setup() {
+  bool good_boy = true;
+  
   pinMode(pin_pot, INPUT);
   Actuator.attach(pin_actuator, UK_MIN, UK_MAX);
 //  Actuator.writeMicroseconds(UK_STOP);
