@@ -1,8 +1,9 @@
-// ecvt_lead_lag_compensator.ino
-// this sketch runs a PID controller on the ecvt
-//
-// author: Tyler McCown (tylermccown@engineering.ucla.edu)
-// created: 4/27/19 
+/* ecvt_PID_control.ino
+ * this sketch runs a PID controller on the ecvt
+ *
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ * created: 4/27/19 
+ */
 
 #include <Wire.h>
 #include <Servo.h>
@@ -49,7 +50,7 @@ int POT_ENGAGE = 509;
 const byte pot_pin = A0;
 int current_pos(0);
 
-// controller
+// "14th birthday" controller
 int r_k = MAX_TORQUE;
 int e_k(0);
 int e_k1(0);

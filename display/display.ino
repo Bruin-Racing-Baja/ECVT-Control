@@ -1,3 +1,10 @@
+/* display.ino
+ * this sketch tests the I2C display
+ * 
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ * created: 3/24/19
+ */
+
 // display setup
 #include <Wire.h>
 #include <I2C_LCD.h>

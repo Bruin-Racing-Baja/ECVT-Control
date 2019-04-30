@@ -1,8 +1,9 @@
-// ecvt_step_response.ino
-// this sketch is meant for gathering step response data from the powertrain
-//
-// author: Tyler McCown (tylermccown@engineering.ucla.edu)
-// created: 3/28/19
+/* ecvt_step_response.ino
+ * this sketch is gathers step response data for a system identification of actuator position to engine rpm
+ *
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ * created: 3/28/19
+ */
 
 //#include <Wire.h>
 //#include <I2C_LCD.h>

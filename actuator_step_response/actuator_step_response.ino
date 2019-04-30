@@ -1,3 +1,10 @@
+/* actuator_step_response.ino
+ * this sketch gathers step response data for a system identification of PWM to actuator position
+ * 
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ * created: 4/10/19
+ */
+
 #include <Servo.h>
 
 #define UK_STOP 1460

@@ -1,3 +1,11 @@
+/* actuator_position_control.ino
+ * this script runs a P controller on the old actuator to track a reference position based on potentiometer feedback
+ * 
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ * created: 3/26/19
+ */ 
+
+
 #include <Servo.h>
 
 // create actuator object

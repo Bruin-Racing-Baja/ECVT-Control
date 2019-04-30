@@ -1,11 +1,12 @@
- // ecvt_lead_lag_compensator.ino
-// this sketch runs a lag compensator on the ecvt
-//
-// author: Tyler McCown (tylermccown@engineering.ucla.edu)
-// created: 4/2/19 
-//
-// tweaked by Iou Sheng Chang (iouschang@engineering.ucla.edu)
-// tweak date: 4/5/19
+/* ecvt_lead_lag_compensator.ino
+ * this sketch runs a lag compensator on the ecvt
+ *
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ * created: 4/2/19 
+ *
+ * tweaked by Iou Sheng Chang (iouschang@engineering.ucla.edu)
+ * tweak date: 4/5/19
+ */
 
 #include <Wire.h>
 #include <Servo.h>
