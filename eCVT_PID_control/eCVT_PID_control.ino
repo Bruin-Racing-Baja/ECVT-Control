@@ -167,7 +167,7 @@ void control_function() {
   // calculate rpm
   rpm_ave = rpm_average();
 
-8 //  // adjust reference
+// adjust reference
 //  if (rpm_ave < THRESH_LOW) {
 //    r_k = MAX_TORQUE;
 //  } else if (rpm_ave > THRESH_HIGH) {
