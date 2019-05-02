@@ -82,7 +82,7 @@ unsigned long gearbox_last_trigger(0);
 unsigned int gearbox_rpm(0);
 
 // moving average filters
-const int num_readings = 4;
+const size_t num_readings = 4;
 unsigned int engine_rpm_ave(0);
 byte engine_index = 0;
 unsigned int engine_readings[num_readings];
@@ -99,13 +99,13 @@ void setup() {
   Serial.begin(9600);
 
   // init I2C interface
-  Wire.begin();
-  LCD.WorkingModeConf(OFF, ON, WM_BitmapMode);
+  // Wire.begin();
+  // LCD.WorkingModeConf(OFF, ON, WM_BitmapMode);
 
   // clear screen and display sweaty bruin
-  LCD.CleanAll(WHITE);
-  LCD.DrawScreenAreaAt(&bmBruinRacing, 0, 1);
-  delay(2000);
+  // LCD.CleanAll(WHITE);
+  // LCD.DrawScreenAreaAt(&bmBruinRacing, 0, 1);
+  // delay(2000);
   
   // setup buttons
   pinMode(button1_pin, INPUT);
@@ -121,17 +121,17 @@ void setup() {
 
   // setup engine hall effect
   pinMode(engine_pin, INPUT);
-  init_readings();
+  init_readings(engine_readings);
   engine_last_trigger = millis();
 
   // configure LCD to write text
-  LCD.CleanAll(WHITE);
-  LCD.DrawScreenAreaAt(&bmBearHead, 0, 0);
-  LCD.WorkingModeConf(OFF, ON, WM_CharMode);
-  LCD.FontModeConf(Font_6x8, FM_MNL_AAA, BLACK_NO_BAC);
-  LCD.DispStringAt("MODE:", 68, 5);
-  LCD.DispStringAt("RPM:", 68, 35);
-  LCD.FontModeConf(Font_8x16_2, FM_MNL_AAA, BLACK_BAC);
+  // LCD.CleanAll(WHITE);
+  // LCD.DrawScreenAreaAt(&bmBearHead, 0, 0);
+  // LCD.WorkingModeConf(OFF, ON, WM_CharMode);
+  // LCD.FontModeConf(Font_6x8, FM_MNL_AAA, BLACK_NO_BAC);
+  // LCD.DispStringAt("MODE:", 68, 5);
+  // LCD.DispStringAt("RPM:", 68, 35);
+  // LCD.FontModeConf(Font_8x16_2, FM_MNL_AAA, BLACK_BAC);
 
   // create timer interrupt
   OCR0A = 0xAF;
@@ -159,16 +159,16 @@ SIGNAL(TIMER0_COMPA_vect) {
   }
 }
 
-void init_readings() {
+void init_readings(unsigned int* readings) {
   for (int i = 0; i < num_readings; i++) {
-    engine_readings[i] = 0;
+    readings[i] = 0;
   }
 }
 
-unsigned int rpm_average() {
+unsigned int rpm_average(const unsigned int* readings) {
   unsigned int sum = 0;
   for (int i = 0; i < num_readings; i++) {
-    sum += engine_readings[i];
+    sum += readings[i];
   }
   return (sum / num_readings);
 }
@@ -176,7 +176,7 @@ unsigned int rpm_average() {
 void control_function() {
 
   // calculate engine_rpm
-  engine_rpm_ave = rpm_average();
+  engine_rpm_ave = rpm_average(engine_readings);
 
 // adjust reference
 //  if (engine_rpm_ave < THRESH_LOW) {
@@ -260,7 +260,7 @@ void loop() {
   // refresh display
   int current_millis = millis();
   if (current_millis - lastRefreshTime >= refreshPeriod) {
-    update_display();
+    // update_display();
     lastRefreshTime = current_millis;
   }
 
