@@ -119,10 +119,17 @@ void setup() {
   pinMode(pot_pin, INPUT);
   current_pos = analogRead(pot_pin);
 
-  // setup engine hall effect
+  // setup engine sensor
   pinMode(engine_pin, INPUT);
   init_readings(engine_readings);
   engine_last_trigger = millis();
+
+  // setup gearbox sensor
+  pinMode(gearbox_pin, INPUT);
+  init_readings(gearbox_readings);
+  gearbox_last_trigger = millis();
+  attachInterrupt(digitalPinToInterrupt(gearbox_pin), gearbox_isr, CHANGE);
+  interrupts();
 
   // configure LCD to write text
   // LCD.CleanAll(WHITE);
@@ -151,12 +158,24 @@ SIGNAL(TIMER0_COMPA_vect) {
     // Serial.print(engine_rpm);
     Serial.print(" ");
     Serial.print(engine_rpm_ave);
+    // Serial.print(" ");
+    // Serial.print(gearbox_rpm);
+    Serial.print(" ");
+    Serial.print(gearbox_rpm_ave);
     Serial.print(" ");
     Serial.print(current_pos);
     // Serial.print(" ");
     // Serial.print(millis());
     Serial.print("\n");
   }
+}
+
+void gearbox_isr() {
+  gearbox_trigger_time = millis();
+  gearbox_rpm = 5.510204 / (gearbox_trigger_time - gearbox_last_trigger);
+  gearbox_readings[gearbox_index] = gearbox_rpm;
+  gearbox_index = (gearbox_index + 1) % num_readings;
+  gearbox_last_trigger = gearbox_trigger_time;
 }
 
 void init_readings(unsigned int* readings) {
@@ -239,7 +258,6 @@ void loop() {
   } 
   if (im_high && (reading < HF_LOW)) {
     engine_trigger_time = millis();
-    engine_trigger_time - engine_last_trigger;
     engine_rpm = 60000.0 / (engine_trigger_time - engine_last_trigger);
     engine_readings[engine_index] = engine_rpm;
     engine_index = (engine_index + 1) % num_readings;
