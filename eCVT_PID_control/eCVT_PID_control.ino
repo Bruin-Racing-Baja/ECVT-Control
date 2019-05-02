@@ -9,14 +9,14 @@
 #include <Servo.h>
 
 // display setup
-//#include <Wire.h>
-//#include <I2C_LCD.h>
-//I2C_LCD LCD;
-//uint8_t I2C_LCD_ADDRESS = 0x51;
-//extern GUI_Bitmap_t bmBruinRacing;
-//extern GUI_Bitmap_t bmBearHead;
-//const int refreshPeriod = 1000; // display refresh time [ms]
-//int lastRefreshTime(0);
+#include <Wire.h>
+#include <I2C_LCD.h>
+I2C_LCD LCD;
+uint8_t I2C_LCD_ADDRESS = 0x51;
+extern GUI_Bitmap_t bmBruinRacing;
+extern GUI_Bitmap_t bmBearHead;
+const int refreshPeriod = 1000; // display refresh time [ms]
+int lastRefreshTime(0);
 
 // buttons
 const byte button1_pin = 13;
@@ -24,10 +24,10 @@ const byte button2_pin = 12;
 const byte button3_pin = 11;
 const byte button4_pin = 10;
 byte mode = 0;
-char mode_names[3][7] = {"TORQUE", "POWER", "LAUNCH"};
+char mode_names[2][7] = {"TORQUE", "POWER "};
 
 // PWM constants
-#define PW_STOP 1510
+#define PW_STOP 1515
 #define PW_MIN 1000
 #define PW_MAX 2000
 #define u_k_limit 100
@@ -37,6 +37,7 @@ const int u_k_max = PW_MAX - PW_STOP;
 // reference signals
 #define MAX_TORQUE 2750
 #define MAX_POWER 3500
+#define LAUNCH 2200
 #define THRESH_LOW 3000
 #define THRESH_HIGH 3250
 
@@ -69,7 +70,7 @@ unsigned long lastControlTime(0);
 #define HF_HIGH 800
 #define HF_LOW 100
 bool im_high = false;
-const byte sensor_pin = A4;
+const byte sensor_pin = 2;
 unsigned long trigger_time(0);
 unsigned long last_trigger(0);
 unsigned long delta_t(0);
@@ -88,19 +89,19 @@ void setup() {
   Serial.begin(9600);
 
   // init I2C interface
-//  Wire.begin();
-//  LCD.WorkingModeConf(OFF, ON, WM_BitmapMode);
+  Wire.begin();
+  LCD.WorkingModeConf(OFF, ON, WM_BitmapMode);
 
   // clear screen and display sweaty bruin
-//  LCD.CleanAll(WHITE);
-//  LCD.DrawScreenAreaAt(&bmBruinRacing, 0, 1);
-//  delay(1000);
+  LCD.CleanAll(WHITE);
+  LCD.DrawScreenAreaAt(&bmBruinRacing, 0, 1);
+  delay(1000);
   
   // setup buttons
-  // pinMode(button1_pin, INPUT);
-  // pinMode(button2_pin, INPUT);
-  // pinMode(button3_pin, INPUT);
-  // pinMode(button4_pin, INPUT);
+   pinMode(button1_pin, INPUT);
+   pinMode(button2_pin, INPUT);
+   pinMode(button3_pin, INPUT);
+   pinMode(button4_pin, INPUT);
 
   // setup actuator
   Actuator.attach(actuator_pin);
@@ -114,13 +115,13 @@ void setup() {
   last_trigger = millis();
 
   // configure LCD to write text
-//  LCD.CleanAll(WHITE);
-//  LCD.DrawScreenAreaAt(&bmBearHead, 0, 0);
-//  LCD.WorkingModeConf(OFF, ON, WM_CharMode);
-//  LCD.FontModeConf(Font_6x8, FM_MNL_AAA, BLACK_NO_BAC);
-//  LCD.DispStringAt("MODE:", 68, 5);
-//  LCD.DispStringAt("RPM:", 68, 35);
-//  LCD.FontModeConf(Font_8x16_2, FM_MNL_AAA, BLACK_BAC);
+  LCD.CleanAll(WHITE);
+  LCD.DrawScreenAreaAt(&bmBearHead, 0, 0);
+  LCD.WorkingModeConf(OFF, ON, WM_CharMode);
+  LCD.FontModeConf(Font_6x8, FM_MNL_AAA, BLACK_NO_BAC);
+  LCD.DispStringAt("MODE:", 68, 5);
+  LCD.DispStringAt("RPM:", 68, 35);
+  LCD.FontModeConf(Font_8x16_2, FM_MNL_AAA, BLACK_BAC);
 
   // create timer interrupt
   OCR0A = 0xAF;
@@ -134,16 +135,16 @@ SIGNAL(TIMER0_COMPA_vect) {
     lastControlTime = current_millis;
 
     Serial.print(r_k);
+    // Serial.print(" ");
+    // Serial.print(u_k);
+    // Serial.print(" ");
+    // Serial.print(rpm);
     Serial.print(" ");
-    Serial.print(u_k);
-    Serial.print(" ");
-//    Serial.print(rpm);
-//    Serial.print(" ");
     Serial.print(rpm_ave);
-//    Serial.print(" ");
-//    Serial.print(current_pos);
-//    Serial.print(" ");
-//    Serial.print(millis());
+    Serial.print(" ");
+    Serial.print(current_pos);
+    // Serial.print(" ");
+    // Serial.print(millis());
     Serial.print("\n");
   }
 }
@@ -179,7 +180,6 @@ void control_function() {
   e_k_sum = constrain(e_k_sum + e_k, u_k_min, u_k_max);
 
   // compute control signal
-//  u_k = Kp*e_k + Ki*Ts/2*e_k_sum + u_k1 + (Kd*N*(e_k-e_k1)-u_k1*(N*Ts/2-1))/(N*Ts/2+1);
   u_k = Kp*e_k + Ki*Ts/2*e_k_sum + u_k1 + Kd*N*(e_k-e_k1)-(N*Ts-1)*u_k1;
   u_k = constrain(u_k, u_k_min, u_k_max);
 
@@ -187,18 +187,12 @@ void control_function() {
     u_k = u_k_max;
   }
 
-  // if (rpm < MAX_TORQUE) {
-  //   POT_MAX = 530 - POT_MARGIN;
-  // } else {
-  //   POT_MAX = POT_ENGAGE + POT_MARGIN;
-  // }
-
-//  // check actuator limits
-//  if (current_pos >= POT_MAX) {
-//    u_k = -u_k_limit;
-//  } else if (current_pos <= POT_MIN) {
-//    u_k = u_k_limit;
-//  }
+  // check actuator limits
+  if (current_pos >= POT_MAX) {
+   u_k = -u_k_limit;
+  } else if (current_pos <= POT_MIN) {
+   u_k = u_k_limit;
+  }
 
   // write to actuator
   Actuator.writeMicroseconds(u_k + PW_STOP);
@@ -209,24 +203,26 @@ void control_function() {
   
 }
 
-//void update_display() {
-//  LCD.WorkingModeConf(OFF, ON, WM_BitmapMode);
-//  LCD.DrawScreenAreaAt(&bmBearHead, 0, 0);
-//  LCD.WorkingModeConf(OFF, ON, WM_CharMode);
-//  LCD.DispStringAt("MODE:", 68, 5);
-//  LCD.DispStringAt("RPM:", 68, 35);
-//  LCD.DispStringAt(mode_names[mode], 78, 15);
-//  char rpm_str[5];
-//  itoa(rpm, rpm_str, 10);
-//  LCD.DispStringAt(rpm_str, 78, 45);
-//}
+void update_display() {
+  LCD.WorkingModeConf(OFF, ON, WM_BitmapMode);
+  LCD.DrawScreenAreaAt(&bmBearHead, 0, 0);
+  LCD.WorkingModeConf(OFF, ON, WM_CharMode);
+  LCD.FontModeConf(Font_6x8, FM_MNL_AAA, BLACK_NO_BAC);
+  LCD.DispStringAt("MODE:", 68, 5);
+  LCD.DispStringAt("RPM:", 68, 35);
+  LCD.FontModeConf(Font_8x16_2, FM_MNL_AAA, BLACK_BAC);
+  LCD.DispStringAt(mode_names[mode], 78, 15);
+  char rpm_str[5];
+  itoa(rpm, rpm_str, 10);
+  LCD.DispStringAt(rpm_str, 78, 45);
+}
 
 void loop() {
 
   // update pot position
   current_pos = analogRead(pot_pin);
 
-  // check rpm
+  // check engine rpm
   int reading = analogRead(sensor_pin);
   if (reading > HF_HIGH) {
     im_high = true;
@@ -240,30 +236,22 @@ void loop() {
     last_trigger = trigger_time;
     im_high = false;
   }
-//  int reading = analogRead(A5);
-//  rpm = map(reading, 0, 1023, 0, 3750);
-//  readings[index] = rpm;
-//  index = (index + 1) % num_readings;
 
   // check button presses
-  // if (digitalRead(button1_pin) == LOW) {
-  //   r_k = MAX_TORQUE;
-  //   mode = 0;
-  // }
-  // if (digitalRead(button2_pin) == LOW) {
-  //   r_k = MAX_POWER;
-  //   mode = 1;
-  // }
-  // if (digitalRead(button3_pin) == LOW) {
-  //   r_k = 5000;
-  //   mode = 2;
-  // }
+   if (digitalRead(button1_pin) == LOW) {
+     r_k = MAX_TORQUE;
+     mode = 0;
+   }
+   if (digitalRead(button2_pin) == LOW) {
+     r_k = MAX_POWER;
+     mode = 1;
+   }
 
   // refresh display
-//  int current_millis = millis();
-//  if (current_millis - lastRefreshTime >= refreshPeriod) {
-//    update_display();
-//    lastRefreshTime = current_millis;
-//  }
+  int current_millis = millis();
+  if (current_millis - lastRefreshTime >= refreshPeriod) {
+    update_display();
+    lastRefreshTime = current_millis;
+  }
 
 }
