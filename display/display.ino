@@ -1,3 +1,4 @@
+
 /* display.ino
  * this sketch tests the I2C display
  * 
@@ -66,4 +67,3 @@ void update_display() {
   LCD.DispStringAt(mode_names[mode], 78, 15);
   LCD.DispStringAt("3600", 78, 45);
 }
-

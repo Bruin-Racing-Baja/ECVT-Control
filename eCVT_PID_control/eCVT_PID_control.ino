@@ -66,19 +66,29 @@ const double Kd = .626;
 const int N = 100;
 unsigned long lastControlTime(0);
 
-// hall effect sensor
+// engine sensor
 #define HF_HIGH 800
 #define HF_LOW 100
 bool im_high = false;
-const byte sensor_pin = 2;
-unsigned long trigger_time(0);
-unsigned long last_trigger(0);
-unsigned long delta_t(0);
-unsigned int rpm(0);
-unsigned int rpm_ave(0);
-byte index = 0;
+const byte engine_pin = A4;
+unsigned long engine_trigger_time(0);
+unsigned long engine_last_trigger(0);
+unsigned int engine_rpm(0);  
+
+// gearbox sensor
+const byte gearbox_pin = 3;
+unsigned long gearbox_trigger_time(0);
+unsigned long gearbox_last_trigger(0);
+unsigned int gearbox_rpm(0);
+
+// moving average filters
 const int num_readings = 4;
-unsigned int readings[num_readings];
+unsigned int engine_rpm_ave(0);
+byte engine_index = 0;
+unsigned int engine_readings[num_readings];
+unsigned int gearbox_rpm_ave(0);
+byte gearbox_index = 0;
+unsigned int gearbox_readings[num_readings];
 
 void setup() {
 
@@ -95,13 +105,13 @@ void setup() {
   // clear screen and display sweaty bruin
   LCD.CleanAll(WHITE);
   LCD.DrawScreenAreaAt(&bmBruinRacing, 0, 1);
-  delay(1000);
+  delay(2000);
   
   // setup buttons
-   pinMode(button1_pin, INPUT);
-   pinMode(button2_pin, INPUT);
-   pinMode(button3_pin, INPUT);
-   pinMode(button4_pin, INPUT);
+  pinMode(button1_pin, INPUT);
+  pinMode(button2_pin, INPUT);
+  pinMode(button3_pin, INPUT);
+  pinMode(button4_pin, INPUT);
 
   // setup actuator
   Actuator.attach(actuator_pin);
@@ -109,10 +119,10 @@ void setup() {
   pinMode(pot_pin, INPUT);
   current_pos = analogRead(pot_pin);
 
-  // setup hall effect
-  pinMode(sensor_pin, INPUT);
+  // setup engine hall effect
+  pinMode(engine_pin, INPUT);
   init_readings();
-  last_trigger = millis();
+  engine_last_trigger = millis();
 
   // configure LCD to write text
   LCD.CleanAll(WHITE);
@@ -138,9 +148,9 @@ SIGNAL(TIMER0_COMPA_vect) {
     // Serial.print(" ");
     // Serial.print(u_k);
     // Serial.print(" ");
-    // Serial.print(rpm);
+    // Serial.print(engine_rpm);
     Serial.print(" ");
-    Serial.print(rpm_ave);
+    Serial.print(engine_rpm_ave);
     Serial.print(" ");
     Serial.print(current_pos);
     // Serial.print(" ");
@@ -151,39 +161,39 @@ SIGNAL(TIMER0_COMPA_vect) {
 
 void init_readings() {
   for (int i = 0; i < num_readings; i++) {
-    readings[i] = 0;
+    engine_readings[i] = 0;
   }
 }
 
 unsigned int rpm_average() {
   unsigned int sum = 0;
   for (int i = 0; i < num_readings; i++) {
-    sum += readings[i];
+    sum += engine_readings[i];
   }
   return (sum / num_readings);
 }
 
 void control_function() {
 
-  // calculate rpm
-  rpm_ave = rpm_average();
+  // calculate engine_rpm
+  engine_rpm_ave = rpm_average();
 
 // adjust reference
-//  if (rpm_ave < THRESH_LOW) {
+//  if (engine_rpm_ave < THRESH_LOW) {
 //    r_k = MAX_TORQUE;
-//  } else if (rpm_ave > THRESH_HIGH) {
+//  } else if (engine_rpm_ave > THRESH_HIGH) {
 //    r_k = MAX_POWER;
 //  }
   
   // compute error
-  e_k = r_k - rpm_ave;
+  e_k = r_k - engine_rpm_ave;
   e_k_sum = constrain(e_k_sum + e_k, u_k_min, u_k_max);
 
   // compute control signal
   u_k = Kp*e_k + Ki*Ts/2*e_k_sum + u_k1 + Kd*N*(e_k-e_k1)-(N*Ts-1)*u_k1;
   u_k = constrain(u_k, u_k_min, u_k_max);
 
-  if (rpm_ave < 1000) {
+  if (engine_rpm_ave < 1000) {
     u_k = u_k_max;
   }
 
@@ -213,7 +223,7 @@ void update_display() {
   LCD.FontModeConf(Font_8x16_2, FM_MNL_AAA, BLACK_BAC);
   LCD.DispStringAt(mode_names[mode], 78, 15);
   char rpm_str[5];
-  itoa(rpm, rpm_str, 10);
+  itoa(engine_rpm, rpm_str, 10);
   LCD.DispStringAt(rpm_str, 78, 45);
 }
 
@@ -222,18 +232,18 @@ void loop() {
   // update pot position
   current_pos = analogRead(pot_pin);
 
-  // check engine rpm
-  int reading = analogRead(sensor_pin);
+  // check engine engine_rpm
+  int reading = analogRead(engine_pin);
   if (reading > HF_HIGH) {
     im_high = true;
   } 
   if (im_high && (reading < HF_LOW)) {
-    trigger_time = millis();
-    delta_t = trigger_time - last_trigger;
-    rpm = 60000.0 / delta_t;
-    readings[index] = rpm;
-    index = (index + 1) % num_readings;
-    last_trigger = trigger_time;
+    engine_trigger_time = millis();
+    engine_trigger_time - engine_last_trigger;
+    engine_rpm = 60000.0 / (engine_trigger_time - engine_last_trigger);
+    engine_readings[engine_index] = engine_rpm;
+    engine_index = (engine_index + 1) % num_readings;
+    engine_last_trigger = engine_trigger_time;
     im_high = false;
   }
 
