@@ -15,13 +15,6 @@
 const int u_k_min = PW_MIN - PW_STOP;
 const int u_k_max = PW_MAX - PW_STOP;
 
-// reference signals
-#define MAX_TORQUE 2750
-#define MAX_POWER 3500
-#define LAUNCH 2200
-#define THRESH_LOW 75 // ~5 mph
-#define THRESH_HIGH 365 // ~25 mph
-
 // actuator
 Servo Actuator;
 const byte actuator_pin = 9;
@@ -31,6 +24,13 @@ int POT_MAX = 294 - POT_MARGIN;
 int POT_ENGAGE = 245;
 const byte pot_pin = A0;
 int current_pos(0);
+
+// reference signals
+#define MAX_TORQUE 2750
+#define MAX_POWER 3500
+#define LAUNCH 2200
+#define RPM_LOW 75 // ~5 mph
+#define RPM_HIGH 365 // ~25 mph
 
 // "14th birthday" controller
 int r_k = MAX_TORQUE;
@@ -161,9 +161,9 @@ void control_function() {
   gearbox_rpm_ave = rpm_average(gearbox_readings);
 
   // adjust reference
-  if (gearbox_rpm_ave < THRESH_LOW) {
+  if (gearbox_rpm_ave < RPM_LOW) {
     r_k = LAUNCH;
-  } else if (gearbox_rpm_ave > THRESH_HIGH) {
+  } else if (gearbox_rpm_ave > RPM_HIGH) {
     r_k = MAX_POWER;
   } else {
     r_k = MAX_TORQUE;
