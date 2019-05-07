@@ -19,9 +19,8 @@ const int u_k_max = PW_MAX - PW_STOP;
 #define MAX_TORQUE 2750
 #define MAX_POWER 3500
 #define LAUNCH 2200
-#define THRESH_LOW 3000
-#define THRESH_MID 3000
-#define THRESH_HIGH 3250
+#define THRESH_LOW 75 // ~5 mph
+#define THRESH_HIGH 365 // ~25 mph
 
 // actuator
 Servo Actuator;
@@ -50,7 +49,7 @@ unsigned long lastControlTime(0);
 
 // engine sensor
 #define HF_HIGH 800
-#define HF_LOW 100
+#define HF_LOW 200
 bool im_high = false;
 const byte engine_pin = A3;
 unsigned long engine_trigger_time(0);
@@ -112,17 +111,24 @@ SIGNAL(TIMER0_COMPA_vect) {
     control_function();
     lastControlTime = current_millis;
 
-    String output = 
-    // r_k
-    // + " " + u_k
-    // + " " + engine_rpm
-    + " " + engine_rpm_ave
-    // + " " + gearbox_rpm
-    + " " + gearbox_rpm_ave
-    // + " " + current_pos
-    // + " " + brake
-    // + " " + millis()
-    Serial.println(output);
+    // Serial.print(r_k);
+    // Serial.print(" ");
+    // Serial.print(u_k);
+    // Serial.print(" ");
+    // Serial.print(engine_rpm);
+    // Serial.print(" ");
+    Serial.print(engine_rpm_ave);
+    // Serial.print(" ");
+    // Serial.print(gearbox_rpm);
+    Serial.print(" ");
+    Serial.print(gearbox_rpm_ave);
+    // Serial.print(" ");
+    // Serial.print(current_pos);
+    // Serial.print(" ");
+    // Serial.print(brake);
+    // Serial.print(" ");
+    // Serial.print(millis());
+    Serial.print("\n");
   }
 }
 
@@ -155,10 +161,12 @@ void control_function() {
   gearbox_rpm_ave = rpm_average(gearbox_readings);
 
   // adjust reference
-  if (engine_rpm_ave < THRESH_LOW) {
-    r_k = MAX_TORQUE;
-  } else if (engine_rpm_ave > THRESH_HIGH) {
+  if (gearbox_rpm_ave < THRESH_LOW) {
+    r_k = LAUNCH;
+  } else if (gearbox_rpm_ave > THRESH_HIGH) {
     r_k = MAX_POWER;
+  } else {
+    r_k = MAX_TORQUE;
   }
   
   // calculate engine rpm
