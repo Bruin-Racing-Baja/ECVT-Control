@@ -1,74 +1,52 @@
-#define NUM_MAGNETS 1
-const byte sensor_pin = A5;
-long rpm(0);
-long last_trigger(0);
-long trigger_time(0);
-int HighLow = LOW;
-bool RPMCount = false;
-int index = 0;
-const int num_readings = 4;
-long readings[num_readings];
-int dt(0);
+#define HF_HIGH 800
+#define HF_LOW 100
+bool im_high = false;
+const byte engine_pin = A3;
+unsigned long engine_trigger_time(0);
+unsigned long engine_last_trigger(0);
+unsigned int engine_rpm(0); 
+
+const size_t num_readings = 4;
+unsigned int engine_rpm_ave(0);
+byte engine_index = 0;
+unsigned int engine_readings[num_readings];
 
 
-void init_readings() {
+void init_readings(unsigned int* readings) {
   for (int i = 0; i < num_readings; i++) {
     readings[i] = 0;
   }
 }
 
-unsigned long rpm_average() {
-//  detachInterrupt(digitalPinToInterrupt(sensor_pin));
+unsigned int rpm_average(const unsigned int* readings) {
   unsigned int sum = 0;
   for (int i = 0; i < num_readings; i++) {
     sum += readings[i];
   }
-//  attachInterrupt(digitalPinToInterrupt(sensor_pin), RPMIsr, FALLING);
   return (sum / num_readings);
 }
 
 void setup() {
-  init_readings();
-  pinMode(sensor_pin, INPUT);
   Serial.begin(9600);
-  last_trigger = millis();
-
-//  attachInterrupt(digitalPinToInterrupt(sensor_pin), RPMIsr, FALLING);
+  pinMode(engine_pin, INPUT);
+  init_readings(engine_readings);
+  engine_last_trigger = millis();
 }
 
 void loop() {
-  RPMCalc();
-  Serial.print(rpm);
-  Serial.print(" ");
-//  Serial.print(rpm_average());
-//  Serial.print(" ");
-//  Serial.print(dt);
-  Serial.print("\n");
-}
+  // check engine_rpm
+  int reading = analogRead(engine_pin);
+  if (reading > HF_HIGH) {
+    im_high = true;
+  } 
+  if (im_high && (reading < HF_LOW)) {
+    engine_trigger_time = millis();
+    engine_rpm = 60000.0 / (engine_trigger_time - engine_last_trigger);
+    engine_readings[engine_index] = engine_rpm;
+    engine_index = (engine_index + 1) % num_readings;
+    engine_last_trigger = engine_trigger_time;
+    im_high = false;
+  }
 
-void RPMCalc() {
-   if (analogRead(sensor_pin) <= 100) {
-     if (HighLow == 1) {
-       trigger_time = millis();
-//       Serial.println(trigger_time);
-       rpm = 60000.0 / (trigger_time - last_trigger);
-//       readings[index] = rpm;
-//       index = (index + 1) % num_readings;
-       last_trigger = trigger_time;
-     }
-     HighLow = 0;
-   }
-   if (analogRead(sensor_pin) >= 800) {
-     HighLow = 1;
-   }
-}
-
-void RPMIsr() {
-  trigger_time = millis();
-  dt = trigger_time - last_trigger;
-  rpm = 60000.0 / (dt);
-//      readings[index] = rpm;
-//      index = (index + 1) % num_readings;
-//  Serial.println(dt);
-  last_trigger = trigger_time;
+  Serial.println(rpm_average(engine_readings) );
 }
