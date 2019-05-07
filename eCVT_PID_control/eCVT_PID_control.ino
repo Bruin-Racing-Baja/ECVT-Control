@@ -30,7 +30,7 @@ char mode_names[2][7] = {"TORQUE", "POWER "};
 #define PW_STOP 1515
 #define PW_MIN 1000
 #define PW_MAX 2000
-#define u_k_limit 100
+#define u_k_limit 70
 const int u_k_min = PW_MIN - PW_STOP;
 const int u_k_max = PW_MAX - PW_STOP;
 
@@ -39,15 +39,16 @@ const int u_k_max = PW_MAX - PW_STOP;
 #define MAX_POWER 3500
 #define LAUNCH 2200
 #define THRESH_LOW 3000
+#define THRESH_MID 3000
 #define THRESH_HIGH 3250
 
 // actuator
 Servo Actuator;
 const byte actuator_pin = 9;
-#define POT_MARGIN 10
-int POT_MIN = 107 + POT_MARGIN;
-int POT_MAX = 530 - POT_MARGIN;
-int POT_ENGAGE = 509;
+#define POT_MARGIN 0
+int POT_MIN = 167 + POT_MARGIN;
+int POT_MAX = 294 - POT_MARGIN;
+int POT_ENGAGE = 245;
 const byte pot_pin = A0;
 int current_pos(0);
 
@@ -81,6 +82,10 @@ unsigned long gearbox_trigger_time(0);
 unsigned long gearbox_last_trigger(0);
 unsigned int gearbox_rpm(0);
 
+// brake sensor
+const byte brake_pin = 8;
+const int u_k_brake = 311;
+
 // moving average filters
 const size_t num_readings = 4;
 unsigned int engine_rpm_ave(0);
@@ -99,13 +104,13 @@ void setup() {
   Serial.begin(9600);
 
   // init I2C interface
-  // Wire.begin();
-  // LCD.WorkingModeConf(OFF, ON, WM_BitmapMode);
+//   Wire.begin();
+//   LCD.WorkingModeConf(OFF, ON, WM_BitmapMode);
 
   // clear screen and display sweaty bruin
-  // LCD.CleanAll(WHITE);
-  // LCD.DrawScreenAreaAt(&bmBruinRacing, 0, 1);
-  // delay(2000);
+//  LCD.CleanAll(WHITE);
+//  LCD.DrawScreenAreaAt(&bmBruinRacing, 0, 1);
+//  delay(2000);
   
   // setup buttons
   pinMode(button1_pin, INPUT);
@@ -132,13 +137,13 @@ void setup() {
   interrupts();
 
   // configure LCD to write text
-  // LCD.CleanAll(WHITE);
-  // LCD.DrawScreenAreaAt(&bmBearHead, 0, 0);
-  // LCD.WorkingModeConf(OFF, ON, WM_CharMode);
-  // LCD.FontModeConf(Font_6x8, FM_MNL_AAA, BLACK_NO_BAC);
-  // LCD.DispStringAt("MODE:", 68, 5);
-  // LCD.DispStringAt("RPM:", 68, 35);
-  // LCD.FontModeConf(Font_8x16_2, FM_MNL_AAA, BLACK_BAC);
+//  LCD.CleanAll(WHITE);
+//  LCD.DrawScreenAreaAt(&bmBearHead, 0, 0);
+//  LCD.WorkingModeConf(OFF, ON, WM_CharMode);
+//  LCD.FontModeConf(Font_6x8, FM_MNL_AAA, BLACK_NO_BAC);
+//  LCD.DispStringAt("MODE:", 68, 5);
+//  LCD.DispStringAt("RPM:", 68, 35);
+//  LCD.FontModeConf(Font_8x16_2, FM_MNL_AAA, BLACK_BAC);
 
   // create timer interrupt
   OCR0A = 0xAF;
@@ -152,18 +157,20 @@ SIGNAL(TIMER0_COMPA_vect) {
     lastControlTime = current_millis;
 
     Serial.print(r_k);
-    // Serial.print(" ");
-    // Serial.print(u_k);
+     Serial.print(" ");
+     Serial.print(u_k);
     // Serial.print(" ");
     // Serial.print(engine_rpm);
     Serial.print(" ");
     Serial.print(engine_rpm_ave);
-    // Serial.print(" ");
-    // Serial.print(gearbox_rpm);
-    Serial.print(" ");
-    Serial.print(gearbox_rpm_ave);
+//     Serial.print(" ");
+//     Serial.print(gearbox_rpm);
+//    Serial.print(" ");
+//    Serial.print(gearbox_rpm_ave);
     Serial.print(" ");
     Serial.print(current_pos);
+    Serial.print(" ");
+    Serial.print(digitalRead(brake_pin));
     // Serial.print(" ");
     // Serial.print(millis());
     Serial.print("\n");
@@ -172,7 +179,7 @@ SIGNAL(TIMER0_COMPA_vect) {
 
 void gearbox_isr() {
   gearbox_trigger_time = millis();
-  gearbox_rpm = 5.510204 / (gearbox_trigger_time - gearbox_last_trigger);
+  gearbox_rpm = 5510.204 / (gearbox_trigger_time - gearbox_last_trigger);
   gearbox_readings[gearbox_index] = gearbox_rpm;
   gearbox_index = (gearbox_index + 1) % num_readings;
   gearbox_last_trigger = gearbox_trigger_time;
@@ -194,8 +201,14 @@ unsigned int rpm_average(const unsigned int* readings) {
 
 void control_function() {
 
-  // calculate engine_rpm
+  // calculate engine rpm
   engine_rpm_ave = rpm_average(engine_readings);
+
+  // calculate gearboxrpm
+  gearbox_rpm_ave = rpm_average(gearbox_readings);
+
+  // check brake
+  bool brake = digitalRead(brake_pin);
 
 // adjust reference
 //  if (engine_rpm_ave < THRESH_LOW) {
@@ -209,7 +222,7 @@ void control_function() {
   e_k_sum = constrain(e_k_sum + e_k, u_k_min, u_k_max);
 
   // compute control signal
-  u_k = Kp*e_k + Ki*Ts/2*e_k_sum + u_k1 + Kd*N*(e_k-e_k1)-(N*Ts-1)*u_k1;
+  u_k = Kp*e_k + Ki*Ts/2*e_k_sum + u_k1 + Kd*N*(e_k-e_k1)-(N*Ts-1)*u_k1 + u_k_brake*brake;
   u_k = constrain(u_k, u_k_min, u_k_max);
 
   if (engine_rpm_ave < 1000) {
@@ -217,7 +230,7 @@ void control_function() {
   }
 
   // check actuator limits
-  if (current_pos >= POT_MAX) {
+  if (current_pos >= POT_ENGAGE) {
    u_k = -u_k_limit;
   } else if (current_pos <= POT_MIN) {
    u_k = u_k_limit;
@@ -251,7 +264,7 @@ void loop() {
   // update pot position
   current_pos = analogRead(pot_pin);
 
-  // check engine engine_rpm
+  // check engine_rpm
   int reading = analogRead(engine_pin);
   if (reading > HF_HIGH) {
     im_high = true;
@@ -278,7 +291,7 @@ void loop() {
   // refresh display
   int current_millis = millis();
   if (current_millis - lastRefreshTime >= refreshPeriod) {
-    // update_display();
+//    update_display();
     lastRefreshTime = current_millis;
   }
 
