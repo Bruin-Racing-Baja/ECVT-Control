@@ -7,7 +7,7 @@
 
 #include <Servo.h>
 
-#define UK_STOP 1510
+#define UK_STOP 1515
 #define UK_MAX 2000
 #define UK_MIN 1000
 
