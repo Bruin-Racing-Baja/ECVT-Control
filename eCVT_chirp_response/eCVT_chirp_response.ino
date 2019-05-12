@@ -16,18 +16,16 @@ const int controlPeriod = 20; // [ms]
 int lastControlTime(0);
 const double Kp = 20;
 const double Ts = double(controlPeriod) / 1000; // controlPeriod [s]
-//const double tau_f = 1/22; // anti-alias filter coefficient for 22Hz
-//const double alpha = 1/(1+tau_f/Ts);
 
 // define potentiometer parameters
 #define POT_MIN 167
 #define POT_MAX 294
 #define POT_ENGAGE 245
-const int pot_pin = A0;
+const int pot_pin = A1;
 int y_k(0);
 
 // define controller error and output values
-int r_k = 230;
+int r_k = 245;
 int e_k(0);
 int u_k(0);
 int u_k_final(0);
@@ -53,7 +51,7 @@ double T = 10;      // period [s]
 void setup() {
   
   // connect to serial
-  Serial.begin(9600);
+//  Serial.begin(9600);
 
   // attach actuator and limit write commands
   Actuator.attach(actuator_pin, PW_MIN, PW_MAX);
@@ -83,7 +81,7 @@ SIGNAL(TIMER0_COMPA_vect) {
       chirp_function();
     }
 
-    Serial.println(analogRead(pot_pin));
+//    Serial.println(analogRead(pot_pin));
 
     // update last run time
     lastControlTime = current_millis;
