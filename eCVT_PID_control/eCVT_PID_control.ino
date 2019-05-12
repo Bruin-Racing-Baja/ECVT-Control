@@ -19,20 +19,21 @@ const int u_k_max = PW_MAX - PW_STOP;
 Servo Actuator;
 const byte actuator_pin = 9;
 #define POT_MARGIN 0
-int POT_MIN = 167 + POT_MARGIN;
+int POT_MIN = 165 + POT_MARGIN;
 int POT_MAX = 294 - POT_MARGIN;
 int POT_ENGAGE = 245;
-const byte pot_pin = A0;
+const byte pot_pin = A1;
 int current_pos(0);
 
 // reference signals
-#define MAX_TORQUE 2750
-#define MAX_POWER 3500
+#define MAX_TORQUE 2900
+#define MAX_POWER 3400
 #define LAUNCH 2200
+#define RPM_MID 320 // ~22 mph
 #define RPM_LOW 75 // ~5 mph
 #define RPM_HIGH 365 // ~25 mph
 
-// "14th birthday" controller
+// controller
 int r_k = MAX_TORQUE;
 int e_k(0);
 int e_k1(0);
@@ -41,9 +42,9 @@ int u_k(0);
 int u_k1(0);
 const byte controlPeriod = 20; // [ms]
 const double Ts = controlPeriod/1000.0; // controlPeriod [s]
-const double Kp = 10;
-const double Ki = 2.744;
-const double Kd = 1.252;
+const double Kp = 1;
+const double Ki = 0;
+const double Kd = 0;
 const int N = 100;
 unsigned long lastControlTime(0);
 
@@ -62,9 +63,14 @@ unsigned long gearbox_trigger_time(0);
 unsigned long gearbox_last_trigger(0);
 unsigned int gearbox_rpm(0);
 
+const byte gbPin = 3;
+unsigned int gbRPM(0);
+unsigned long gbPrevMil(0);
+bool gbstate(LOW);
+
 // brake sensor
 const byte brake_pin = 8;
-const int u_k_brake = 311;
+const int Kff = 311;
 bool brake(false);
 
 // moving average filters
@@ -96,9 +102,10 @@ void setup() {
 
   // setup gearbox sensor
   pinMode(gearbox_pin, INPUT);
+  pinMode(gbPin, INPUT);
   init_readings(gearbox_readings);
-  attachInterrupt(digitalPinToInterrupt(gearbox_pin), gearbox_isr, CHANGE);
-  interrupts();
+//  attachInterrupt(digitalPinToInterrupt(gearbox_pin), gearbox_isr, CHANGE);
+//  interrupts();
 
   // create timer interrupt
   OCR0A = 0xAF;
@@ -111,35 +118,35 @@ SIGNAL(TIMER0_COMPA_vect) {
     control_function();
     lastControlTime = current_millis;
 
-    // Serial.print(r_k);
-    // Serial.print(" ");
-    // Serial.print(u_k);
+//     Serial.print(r_k);
+     Serial.print(" ");
+     Serial.print(u_k);
     // Serial.print(" ");
     // Serial.print(engine_rpm);
-    // Serial.print(" ");
-    Serial.print(engine_rpm_ave);
+//     Serial.print(" ");
+//    Serial.print(engine_rpm_ave);
     // Serial.print(" ");
     // Serial.print(gearbox_rpm);
-    Serial.print(" ");
-    Serial.print(gearbox_rpm_ave);
-    // Serial.print(" ");
-    // Serial.print(current_pos);
-    // Serial.print(" ");
-    // Serial.print(brake);
+//    Serial.print(" ");
+//    Serial.print(gearbox_rpm_ave);
+     Serial.print(" ");
+     Serial.print(current_pos);
+//     Serial.print(" ");
+//     Serial.print(brake);
     // Serial.print(" ");
     // Serial.print(millis());
     Serial.print("\n");
   }
 }
 
-void gearbox_isr() {
-  gearbox_trigger_time = millis();
-  // rpm to mph .068425
-  gearbox_rpm = 5510.204 / (gearbox_trigger_time - gearbox_last_trigger);
-  gearbox_readings[gearbox_index] = gearbox_rpm;
-  gearbox_index = (gearbox_index + 1) % num_readings;
-  gearbox_last_trigger = gearbox_trigger_time;
-}
+//void gearbox_isr() {
+//  gearbox_trigger_time = millis();
+//  // rpm to mph .068425
+//  gearbox_rpm = 5510.204 / (gearbox_trigger_time - gearbox_last_trigger);
+//  gearbox_readings[gearbox_index] = gearbox_rpm;
+//  gearbox_index = (gearbox_index + 1) % num_readings;
+//  gearbox_last_trigger = gearbox_trigger_time;
+//}
 
 void init_readings(unsigned int* readings) {
   for (int i = 0; i < num_readings; i++) {
@@ -161,12 +168,10 @@ void control_function() {
   gearbox_rpm_ave = rpm_average(gearbox_readings);
 
   // adjust reference
-  if (gearbox_rpm_ave < RPM_LOW) {
-    r_k = LAUNCH;
-  } else if (gearbox_rpm_ave > RPM_HIGH) {
-    r_k = MAX_POWER;
-  } else {
+  if (gearbox_rpm_ave < RPM_SWITCH) {
     r_k = MAX_TORQUE;
+  } else {
+    r_k = MAX_POWER;
   }
   
   // calculate engine rpm
@@ -180,11 +185,12 @@ void control_function() {
   brake = digitalRead(brake_pin);
 
   // compute control signal
-  u_k = Kp*e_k + Ki*Ts/2*e_k_sum + u_k1 + Kd*N*(e_k-e_k1)-(N*Ts-1)*u_k1 + u_k_brake*brake;
+//  u_k = Kp*e_k + Ki*Ts/2*e_k_sum + u_k1 + Kd*N*(e_k-e_k1)-(N*Ts-1)*u_k1 + Kff*brake;
+  u_k = Kp*e_k + Kff*brake;
   u_k = constrain(u_k, u_k_min, u_k_max);
 
   // force shift out if rpm is too low
-  if (engine_rpm_ave < 1000) {
+  if (engine_rpm_ave < 1500) {
     u_k = u_k_max;
   }
 
@@ -220,5 +226,17 @@ void loop() {
     engine_index = (engine_index + 1) % num_readings;
     engine_last_trigger = engine_trigger_time;
     im_high = false;
+  }
+
+  // check gearbox rpm
+  if (digitalRead(gbPin) == 1 && gbstate != 1) {
+    gbRPM = (5510204.0*2)/(micros() - gbPrevMil);
+    gbPrevMil = micros();
+    gearbox_readings[gearbox_index] = gbRPM;
+    gearbox_index = (gearbox_index + 1) % num_readings;
+    gbstate = 1;
+  }
+  if (digitalRead(gbPin) == 0) {
+    gbstate = 0;
   }
 }
