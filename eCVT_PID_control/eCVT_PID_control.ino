@@ -28,7 +28,7 @@ int current_pos(0);
 // reference signals
 #define MAX_TORQUE 2900
 #define MAX_POWER 3400
-#define LAUNCH 2200
+#define LAUNCH 2000
 #define RPM_MID 320 // ~22 mph
 #define RPM_LOW 75 // ~5 mph
 #define RPM_HIGH 365 // ~25 mph
@@ -168,10 +168,12 @@ void control_function() {
   gearbox_rpm_ave = rpm_average(gearbox_readings);
 
   // adjust reference
-  if (gearbox_rpm_ave < RPM_SWITCH) {
-    r_k = MAX_TORQUE;
-  } else {
+  if (gearbox_rpm_ave > RPM_HIGH{
     r_k = MAX_POWER;
+  } else if (gearbox_rpm_ave < RPM_LOW) {
+    r_k = LAUNCH;
+  } else {
+    r_k = MAX_TORUQE;
   }
   
   // calculate engine rpm
