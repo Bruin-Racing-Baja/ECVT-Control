@@ -1,5 +1,9 @@
 #include <Servo.h>
 
+// reset
+const byte reset_pin = 5;
+unsigned long start_time(0);
+
 // PWM constants
 #define PW_STOP 1515
 #define PW_MIN 1000
@@ -102,6 +106,11 @@ unsigned int gearbox_readings[num_readings];
 
 void setup() {
 
+  // configure reset
+  digitalWrite(reset_pin, HIGH);
+  start_time = millis();
+  pinMode(reset_pin, OUTPUT);
+
   // arduino is a good boy
   bool good_boy = true;
 
@@ -136,18 +145,18 @@ SIGNAL(TIMER0_COMPA_vect) {
     control_function();
     lastControlTime = current_millis;
 
-     Serial.print(r_k);
-     Serial.print(" ");
+//     Serial.print(r_k);
+//     Serial.print(" ");
 //     Serial.print(u_k);
 //     Serial.print(" ");
-////     Serial.print(engine_rpm);
-////     Serial.print(" ");
-     Serial.print(engine_rpm_ave);
-     Serial.print(" ");
-//     Serial.print(gearbox_rpm);
+//     Serial.print(engine_rpm);
 //     Serial.print(" ");
-     Serial.print(gearbox_rpm_ave);
+//     Serial.print(engine_rpm_ave);
+//     Serial.print(" ");
+//     Serial.print(gearbox_rpm);
      Serial.print(" ");
+     Serial.print(gearbox_rpm_ave);
+//     Serial.print(" ");
 //     Serial.print(current_pos);
 //     Serial.print(" ");
 //     Serial.print(brake);
@@ -293,5 +302,9 @@ void loop() {
   }
   if (digitalRead(gbPin) == 0) {
     gbstate = 0;
+  }
+
+  if (millis() - start_time > 80e3) {
+    digitalWrite(reset_pin, LOW);
   }
 }
