@@ -88,7 +88,7 @@ unsigned int gearbox_rpm(0);
 const byte gbPin = 3;
 unsigned int gbRPM(0);
 unsigned long gbPrevMil(0);
-bool gbstate(LOW);
+bool gbstate(HIGH);
 
 // brake sensor
 const byte brake_pin = 8;
