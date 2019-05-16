@@ -31,7 +31,7 @@ int current_pos(0);
 // ***** GB ***** //
 #define GB_LAUNCH 80  // ~ 5 mph
 #define GB_TORQUE 128 // ~ 8 mph
-#define GB_POWER 621.6  // ~ 41 mph
+#define GB_POWER 621.6  // ~ 39 mph
 // ***** ON JACK STAND ***** //
 //#define RPM_IDLE 67
 //#define RPM_2400 93
@@ -148,6 +148,7 @@ void control_function() {
   u_k_max = U_K_ABS_MAX;
   // ***** LAUNCH ***** //
   if (gearbox_rpm_ave < GB_LAUNCH) {
+    // u_k_max = 0;
     if (engine_rpm_ave >= EG_TORQUE) {
       u_k_min = U_K_LAUNCH_FAST;
     } else if (engine_rpm_ave >= EG_LAUNCH) {
@@ -204,5 +205,14 @@ void loop() {
     current_pos = analogRead(pot_pin);
     control_function();
     last_control_time = current_micros;
+
+  //  Serial.print(r_k);
+  //  Serial.print(" ");
+  //  Serial.print(gearbox_rpm_ave);
+  //  Serial.print(" ");
+  //  Serial.print(engine_rpm_ave);
+  //  Serial.print(" ");
+  //  Serial.print(current_pos);
+  //  Serial.print("\n");
   }
 }
