@@ -123,7 +123,7 @@ void control_function() {
   } else if (gearbox_rpm_ave > GB_LAUNCH) {
     r_k = map(gearbox_rpm_ave, GB_LAUNCH, GB_TORQUE, EG_LAUNCH, EG_TORQUE);
   } else {
-    r_k = EG_TORQUE;
+    r_k = EG_LAUNCH;
   }
  
   // calculate engine rpm
@@ -142,19 +142,19 @@ void control_function() {
     pot_lim_out = POT_MAX;
   }
 
-  // constrain for launch and PWM limits
-  if (gearbox_rpm_ave < GB_LAUNCH && engine_rpm_ave >= EG_TORQUE) {
-    u_k_min = U_K_LAUNCH_FAST;
-    u_k_max = 0;
-  } else if (gearbox_rpm_ave < GB_LAUNCH && engine_rpm_ave >= EG_LAUNCH) {
-    u_k_min = U_K_LAUNCH_SLOW;
-    u_k_max = 0;
-  } else {
-    u_k_min = U_K_ABS_MIN;
-    u_k_max = U_K_ABS_MAX;
+  // constrain control output
+  // ***** PWM LIMITS ***** //
+  u_k_min = U_K_ABS_MIN;
+  u_k_max = U_K_ABS_MAX;
+  // ***** LAUNCH ***** //
+  if (gearbox_rpm_ave < GB_LAUNCH) {
+    if (engine_rpm_ave >= EG_TORQUE) {
+      u_k_min = U_K_LAUNCH_FAST;
+    } else if (engine_rpm_ave >= EG_LAUNCH) {
+      u_k_min = U_K_LAUNCH_SLOW;
+    }
   }
-
-  // software limit switches
+  // ***** POT LIMITS ***** //
   if (current_pos >= pot_lim_out) {
     u_k_max = 0;
   } else if (current_pos <= pot_lim_in) {
