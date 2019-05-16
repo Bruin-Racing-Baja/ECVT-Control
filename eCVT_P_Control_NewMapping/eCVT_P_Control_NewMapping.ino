@@ -25,7 +25,7 @@ int current_pos(0);
 // reference signals
 // ***** ENGINE ***** //
 #define EG_KILL 1500
-#define EG_LAUNCH 1800
+#define EG_LAUNCH 2100
 #define EG_TORQUE 2600
 #define EG_POWER 3400
 // ***** GB ***** //
