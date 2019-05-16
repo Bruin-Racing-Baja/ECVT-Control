@@ -4,31 +4,27 @@
 #define PW_STOP 1515
 #define PW_MIN 1000
 #define PW_MAX 2000
-#define u_k_limit 80
-#define u_k_launch_slow -200
-#define u_k_launch_fast -350
-const int u_k_min = PW_MIN - PW_STOP;
-const int u_k_max = PW_MAX - PW_STOP;
+#define U_K_LIMIT 80
+#define U_K_LAUNCH_SLOW -200
+#define U_K_LAUNCH_FAST -350
+#define U_K_MIN PW_MIN - PW_STOP
+#define U_K_MAX PW_MAX - PW_STOP
 
 // actuator
 Servo Actuator;
 const byte actuator_pin = 9;
-#define POT_MARGIN 0
-#define POT_MIN 165 + POT_MARGIN
-#define POT_MAX 249 - POT_MARGIN
+#define POT_MIN 165
+#define POT_MAX 249
 #define POT_ENGAGE 240
-#define POT_LAUNCH 225
-int POT_OUT = POT_MAX;
-int POT_IN = POT_MIN;
+int pot_lim_out = POT_MAX;
+int pot_lim_in = POT_MIN;
 const byte pot_pin = A1;
 int current_pos(0);
 
 // reference signals
 // ***** ENGINE ***** //
 #define EG_LAUNCH 1800
-#define EG_STUPID 2400
 #define EG_TORQUE 2600
-#define MAX_TORQUE 2700
 #define EG_POWER 3100
 #define EG_GEARLIMIT 3400
 #define EG_KILL 1500
@@ -44,18 +40,12 @@ int current_pos(0);
 //#define RPM_3200 350
 
 // controller
-int r_k = MAX_TORQUE;
+int r_k = EG_TORQUE;
 int e_k(0);
-int e_k1(0);
-int e_k_sum(0);
 int u_k(0);
-int u_k1(0);
 const byte controlPeriod = 20; // [ms]
 const double Ts = controlPeriod/1000.0; // controlPeriod [s]
 const double Kp = 1;
-const double Ki = 0;
-const double Kd = 0;
-const int N = 100;
 unsigned long lastControlTime(0);
 
 // engine sensor
@@ -65,7 +55,7 @@ bool im_high = false;
 const byte engine_pin = A3;
 unsigned long engine_trigger_time(0);
 unsigned long engine_last_trigger(0);
-unsigned int engine_rpm(0);  
+unsigned int engine_rpm(0);
 
 // gearbox sensor
 const byte gbPin = 3;
@@ -101,7 +91,7 @@ void setup() {
   pinMode(pot_pin, INPUT);
   current_pos = analogRead(pot_pin);
 
-  // setup engine sensor nh
+  // setup engine sensor
   pinMode(engine_pin, INPUT);
   init_readings(engine_readings);
 
@@ -163,15 +153,12 @@ void control_function() {
   // adjust reference
   if (gearbox_rpm_ave > GB_POWER) {
     r_k = EG_GEARLIMIT;
-  } 
-  else if (gearbox_rpm_ave > GB_TORQUE) {
+  } else if (gearbox_rpm_ave > GB_TORQUE) {
     r_k = map(gearbox_rpm_ave, GB_TORQUE, GB_POWER, EG_TORQUE, EG_POWER);
-  } 
-  else if (gearbox_rpm_ave > GB_LAUNCH) {
+  } else if (gearbox_rpm_ave > GB_LAUNCH) {
     r_k = map(gearbox_rpm_ave, GB_LAUNCH, GB_TORQUE, EG_LAUNCH, EG_TORQUE);
-  } 
-  else {
-    r_k = EG_LAUNCH;  
+  } else {
+    r_k = EG_LAUNCH;
   }
  
   // calculate engine rpm
@@ -179,54 +166,48 @@ void control_function() {
 
   // compute error
   e_k = r_k - engine_rpm_ave;
-  e_k_sum = constrain(e_k_sum + e_k, u_k_min, u_k_max);
 
   // check brake
-//  brake = digitalRead(brake_pin); 
+  // brake = digitalRead(brake_pin);
 
   // compute control signal
-//  u_k = Kp*e_k + Ki*Ts/2*e_k_sum + u_k1 + Kd*N*(e_k-e_k1)-(N*Ts-1)*u_k1 + Kff*brake;
-//  u_k = Kp*e_k + Kff*brake;
   u_k = Kp*e_k;
+  // u_k += brake*Kff;
+
+  // constrain for launch and PWM limits
   if (gearbox_rpm_ave < GB_LAUNCH && engine_rpm_ave >= EG_TORQUE) {
-    u_k = constrain(u_k, u_k_launch_fast, 0);
+    u_k = constrain(u_k, U_K_LAUNCH_FAST, 0);
   } else if (gearbox_rpm_ave < GB_LAUNCH && engine_rpm_ave >= EG_LAUNCH) {
-    u_k = constrain(u_k, u_k_launch_slow, 0);
+    u_k = constrain(u_k, U_K_LAUNCH_SLOW, 0);
   } else {
-    u_k = constrain(u_k, u_k_min, u_k_max); 
+    u_k = constrain(u_k, U_K_MIN, U_K_MAX);
   }
 
   // force shift out if rpm is too low
   if (engine_rpm_ave < EG_KILL) {
-    u_k = u_k_max;
+    u_k = U_K_MAX;
   }
 
-  // POT_OUT shifting
+  // change pot outer limit
   if (engine_rpm_ave >= EG_LAUNCH) {
-    POT_OUT = POT_ENGAGE;
-    Actuator.writeMicroseconds(u_k_launch_fast + PW_STOP);
-//  Actuator.writeMicroseconds(u_k_min + PW_STOP);
+    pot_lim_out = POT_ENGAGE;
+  } else {
+    pot_lim_out = POT_MAX;
   }
 
   // software limit switches
-  if (current_pos >= POT_OUT) {
-    u_k = -u_k_limit;
-  } else if (current_pos <= POT_IN) {
-    u_k = u_k_limit;
+  if (current_pos >= pot_lim_out) {
+    u_k = -U_K_LIMIT;
+  } else if (current_pos <= pot_lim_in) {
+    u_k = U_K_LIMIT;
   }
 
   // write to actuator
   Actuator.writeMicroseconds(u_k + PW_STOP);
-
-  // update past values
-  e_k1 = e_k;
-  u_k1 = u_k;
-
-  // POT_MAX
-  POT_OUT = POT_MAX;
 }
 
 void loop() {
+  unsigned long current_micros = micros();
 
   // update pot position
   current_pos = analogRead(pot_pin);
@@ -237,8 +218,8 @@ void loop() {
     im_high = true;
   }
   if (im_high && (reading < HF_LOW)) {
-    engine_trigger_time = millis();
-    engine_rpm = 60000.0 / (engine_trigger_time - engine_last_trigger);
+    engine_trigger_time = current_micros;
+    engine_rpm = 60000000.0 / (engine_trigger_time - engine_last_trigger);
     engine_readings[engine_index] = engine_rpm;
     engine_index = (engine_index + 1) % num_readings;
     engine_last_trigger = engine_trigger_time;
@@ -247,8 +228,8 @@ void loop() {
 
   // check gearbox rpm
   if (digitalRead(gbPin) == 1 && gbstate != 1) {
-    gbRPM = (5510204.0*2)/(micros() - gbPrevMil);
-    gbPrevMil = micros();
+    gbRPM = (5510204.0*2)/(current_micros - gbPrevMil);
+    gbPrevMil = current_micros;
     gearbox_readings[gearbox_index] = gbRPM;
     gearbox_index = (gearbox_index + 1) % num_readings;
     gbstate = 1;
