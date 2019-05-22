@@ -12,9 +12,9 @@
 // actuator
 Servo Actuator;
 const byte actuator_pin = 9;
-#define POT_MIN 165
-#define POT_MAX 249
-#define POT_ENGAGE 240
+#define POT_MIN 163
+#define POT_MAX 254
+#define POT_ENGAGE 245
 int pot_lim_out = POT_MAX;
 int pot_lim_in = POT_MIN;
 int u_k_min = U_K_ABS_MIN;
@@ -24,9 +24,10 @@ int current_pos(0);
 
 // reference signals
 // ***** ENGINE ***** //
-#define EG_KILL 1500
-#define EG_LAUNCH 1800
-#define EG_TORQUE 2600
+#define EG_IDLE 1750
+#define EG_ENGAGE 2100
+#define EG_LAUNCH 2600
+#define EG_TORQUE 2700
 #define EG_POWER 3400
 // ***** GB ***** //
 #define GB_LAUNCH 80  // ~ 5 mph
@@ -136,10 +137,10 @@ void control_function() {
   u_k = Kp*e_k;
 
   // change pot outer limit
-  if (engine_rpm_ave >= EG_LAUNCH) {
-    pot_lim_out = POT_ENGAGE;
+  if (engine_rpm_ave <= EG_ENGAGE) {
+    pot_lim_out = map(engine_rpm_ave, EG_IDLE, EG_ENGAGE, POT_MAX, POT_ENGAGE);
   } else {
-    pot_lim_out = POT_MAX;
+    pot_lim_out = POT_ENGAGE;
   }
 
   // constrain control output
@@ -151,7 +152,7 @@ void control_function() {
     // u_k_max = 0;
     if (engine_rpm_ave >= EG_TORQUE) {
       u_k_min = U_K_LAUNCH_FAST;
-    } else if (engine_rpm_ave >= EG_LAUNCH) {
+    } else if (engine_rpm_ave >= EG_ENGAGE) {
       u_k_min = U_K_LAUNCH_SLOW;
     }
   }
@@ -184,6 +185,9 @@ void loop() {
     engine_index = (engine_index + 1) % num_readings;
     engine_last_trigger = engine_trigger_time;
     engine_state = LOW;
+  } else if (current_micros - engine_last_trigger >= 1000000) {
+    init_readings(engine_readings);
+    engine_last_trigger = current_micros;
   }
 
   // check gearbox rpm
@@ -208,11 +212,11 @@ void loop() {
 
   //  Serial.print(r_k);
   //  Serial.print(" ");
-  //  Serial.print(gearbox_rpm_ave);
-  //  Serial.print(" ");
-  //  Serial.print(engine_rpm_ave);
-  //  Serial.print(" ");
-  //  Serial.print(current_pos);
-  //  Serial.print("\n");
+//    Serial.print(gearbox_rpm_ave);
+//    Serial.print(" ");
+//    Serial.print(engine_rpm_ave);
+//    Serial.print(" ");
+//   Serial.print(current_pos);
+//   Serial.print("\n");
   }
 }
