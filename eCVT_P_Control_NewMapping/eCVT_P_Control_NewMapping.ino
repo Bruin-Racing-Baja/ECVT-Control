@@ -11,7 +11,7 @@
 
 // actuator
 Servo Actuator;
-const byte actuator_picn = 9;
+const byte actuator_pin = 9;
 #define POT_MIN 163
 #define POT_MAX 254
 #define POT_ENGAGE 245
@@ -80,7 +80,7 @@ void setup() {
   bool good_boy = true;
 
   // open serial connection
-  Serial.begin(9600);
+//  Serial.begin(9600);
 
   // setup actuator
   Actuator.attach(actuator_pin);
@@ -120,9 +120,7 @@ void control_function() {
   if (gearbox_rpm_ave > GB_POWER) {
     r_k = EG_POWER;
   } else if (gearbox_rpm_ave > GB_TORQUE) {
-    r_k = map(gearbox_rpm_ave, GB_TORQUE, GB_POWER, EG_TORQUE, EG_POWER);
-  } else if (gearbox_rpm_ave > GB_LAUNCH) {
-    r_k = map(gearbox_rpm_ave, GB_LAUNCH, GB_TORQUE, EG_LAUNCH, EG_TORQUE);
+    r_k = map(gearbox_rpm_ave, GB_LAUNCH, GB_POWER, EG_LAUNCH, EG_POWER);
   } else {
     r_k = EG_LAUNCH;
   }
@@ -210,8 +208,8 @@ void loop() {
     control_function();
     last_control_time = current_micros;
 
-  //  Serial.print(r_k);
-  //  Serial.print(" ");
+//    Serial.print(r_k);
+//    Serial.print(" ");
 //    Serial.print(gearbox_rpm_ave);
 //    Serial.print(" ");
 //    Serial.print(engine_rpm_ave);
