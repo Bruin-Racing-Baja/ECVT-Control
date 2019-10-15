@@ -45,7 +45,6 @@ int r_k = EG_TORQUE;
 int e_k(0);
 int u_k(0);
 const int control_period = 20000; // [us]
-const double Ts = control_period/1000000.0; // control_period [s]
 const double Kp = 1;
 unsigned long last_control_time(0);
 
