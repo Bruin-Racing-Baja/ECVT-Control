@@ -31,7 +31,6 @@ int current_pos(0);
 #define EG_POWER 3400
 // ***** GB ***** //
 #define GB_LAUNCH 80  // ~ 5 mph
-#define GB_TORQUE 128 // ~ 8 mph
 #define GB_POWER 621.6  // ~ 39 mph
 // ***** ON JACK STAND ***** //
 //#define RPM_IDLE 67
@@ -118,12 +117,12 @@ void control_function() {
   // adjust reference
   if (gearbox_rpm_ave > GB_POWER) {
     r_k = EG_POWER;
-  } else if (gearbox_rpm_ave > GB_TORQUE) {
+  } else if (gearbox_rpm_ave > GB_LAUNCH) {
     r_k = map(gearbox_rpm_ave, GB_LAUNCH, GB_POWER, EG_LAUNCH, EG_POWER);
   } else {
     r_k = EG_LAUNCH;
   }
- 
+
   // calculate engine rpm
   engine_rpm_ave = rpm_average(engine_readings);
 
@@ -150,7 +149,7 @@ void control_function() {
     if (engine_rpm_ave >= EG_TORQUE) {
       u_k_min = U_K_LAUNCH_FAST;
     } else if (engine_rpm_ave >= EG_ENGAGE) {
-      u_k_min = U_K_LAUNCH_SLOW;
+      u_k_min = U_K_LAUNCH_SLOW; // this statement has no effect
     }
   }
   // ***** POT LIMITS ***** //
