@@ -4,8 +4,8 @@
 #define PW_STOP 1551 // [pwm]
 #define PW_MIN 1000 // [pwm]
 #define PW_MAX 2000 // [pwm]
-#define U_MIN PW_MIN - PW_STOP // [dpwm]
-#define U_MAX PW_MAX - PW_STOP // [dpwm]
+const int U_MIN = PW_MIN - PW_STOP; // [dpwm]
+const int U_MAX = PW_MAX - PW_STOP; // [dpwm]
 
 // actuator constants
 Servo Actuator;
@@ -23,28 +23,28 @@ int u_max = U_MAX; // [dpwm]
 unsigned int actuator_pos(0);
 
 // timing
-unsigned long current_micros(0); // [us]
+unsigned long current_millis(0); // [ms]
 
-// filter gain
-#define FILT_GAIN 1e3
+// scaling constants
+#define RPM_PREDIV 10
+#define FILT_GAIN 1e2
 
-// reference signals
+// reference signals [rpm/10]
 // ***** ENGINE ***** //
-#define EG_IDLE 1750 * FILT_GAIN
-#define EG_ENGAGE 2100 * FILT_GAIN
-#define EG_LAUNCH 2600 * FILT_GAIN
-#define EG_TORQUE 2700 * FILT_GAIN
-#define EG_POWER 3400 * FILT_GAIN
+const unsigned int EG_IDLE = 1750 * FILT_GAIN / RPM_PREDIV;
+const unsigned int EG_ENGAGE = 2100 * FILT_GAIN / RPM_PREDIV;
+const unsigned int EG_LAUNCH = 2600 * FILT_GAIN / RPM_PREDIV;
+const unsigned int EG_TORQUE = 2700 * FILT_GAIN / RPM_PREDIV;
+const unsigned int EG_POWER = 3400 * FILT_GAIN / RPM_PREDIV;
 // ***** GB ***** //
-#define GB_LAUNCH 80 * FILT_GAIN // ~ 5 mph
-#define GB_TORQUE 128 * FILT_GAIN // ~ 8 mph
-#define GB_POWER 621.6 * FILT_GAIN // ~ 39 mph
+const unsigned int GB_LAUNCH = 80 * FILT_GAIN / RPM_PREDIV; // ~ 5 mph
+const unsigned int GB_TORQUE = 128 * FILT_GAIN / RPM_PREDIV; // ~ 8 mph
+const unsigned int GB_POWER = 621.6 * FILT_GAIN / RPM_PREDIV; // ~ 39 mph
 
 // controller
-#define CONTROLLER_GAIN 10
-unsigned long last_control_micros(0); // [us]
-const unsigned int control_period = 20e3; // [us]
-int r_k = EG_TORQUE;
+unsigned long last_control_millis(0); // [ms]
+const byte control_period = 20; // [ms]
+unsigned int r_k = EG_TORQUE; // [rpm/10]
 const byte Kp = 1;
 
 // engine rpm
@@ -54,40 +54,40 @@ unsigned long eg_count = 0;
 unsigned long eg_count_prev = 0;
 #define HF_HIGH 800
 #define HF_LOW 200
-// conversion from ticks/sample to rpm:
+// conversion from ticks/sample to rpm/RPM_PREDIV:
 //  1/control_period samples/us
-//  1e6 us/s
+//  1e3 ms/s
 //  1 rev/tick
 //  60 s/min
-const int eg_count2rpm_num = 1e6*60; // TODO
-const int eg_count2rpm_denom = control_period; // TODO
-const int eg_filt_const_1 = 883;
-const int eg_filt_const_2 = -766;
-unsigned int eg_rpm_raw(0);
-unsigned int eg_rpm(0);
+const unsigned int eg_count2rpm = 1e3*60/control_period/RPM_PREDIV;
+const byte eg_filt_const_1 = 88;
+const byte eg_filt_const_2 = -77;
+unsigned int eg_rpm_raw(0); // [rpm/10]
+unsigned int eg_rpm(0); // [rpm*10]
 
 // gearbox rpm
 const byte gb_hall_pin = 3;
 bool gb_state(LOW);
 unsigned long gb_count = 0;
 unsigned long gb_count_prev = 0;
-// conversion from ticks/sample to rpm:
+// conversion from ticks/sample to rpm/RPM_PREDIV:
 //  1/control_period samples/us
-//  1e6 us/s
+//  1e3 ms/s
 //  1/4 rev/tick
 //  60 s/min
 //  49/18 gear ratio
-const int gb_count2rpm_num = 1e6*60*49; // TODO
-const int gb_count2rpm_denom = control_period*4*18; // TODO
-const int gb_filt_const_1 = 557;
-const int gb_filt_const_2 = -114;
-unsigned int gb_rpm_raw(0);
-unsigned int gb_rpm(0);
+const unsigned int gb_count2rpm = 1e3*60*49/control_period/4/18/RPM_PREDIV;
+const int gb_filt_const_1 = 56;
+const int gb_filt_const_2 = -11;
+unsigned int gb_rpm_raw(0); // [rpm/10]
+unsigned int gb_rpm(0); // [rpm*10]
 
 void setup() {
 
   // arduino is a good boy
   bool good_boy = true;
+
+  Serial.begin(9600);
 
   // setup actuator
   Actuator.attach(actuator_pin);
@@ -100,17 +100,18 @@ void setup() {
 
   // setup gearbox sensor
   pinMode(gb_hall_pin, INPUT);
+
 }
 
 void loop() {
   
   // check time
-  current_micros = micros();
+  current_millis = millis();
 
   // check time on control loop
-  if (current_micros - last_control_micros >= control_period) {
+  if (current_millis - last_control_millis >= control_period) {
     control_loop();
-    last_control_micros = current_micros;
+    last_control_millis = current_millis;
   }
 
   // check sensors
@@ -125,6 +126,10 @@ void control_loop() {
   // calculate rpms
   calc_eg_rpm();
   calc_gb_rpm();
+
+  // that's all for now, print and return
+  Serial.println(eg_count);
+  return;
 
   // adjust reference
   if (gb_rpm > GB_POWER) {
@@ -152,17 +157,17 @@ void control_loop() {
   }
 
   // calculate error
-  int e_k = r_k - eg_rpm;
+  int e_k = (int) r_k - eg_rpm; // [rpm*10]
   
   // calculate control signal
-  int u_k = Kp*e_k;
-  u_k /= FILT_GAIN*CONTROLLER_GAIN;
+  int u_k = Kp*e_k; // [dpwm*10]
+  u_k = u_k * RPM_PREDIV / FILT_GAIN; // [dpwm]
   u_k = constrain(u_k, u_min, u_max);
   
   // write to actuator
   Actuator.writeMicroseconds(u_k + PW_STOP);
 
-  last_control_micros = current_micros;
+  last_control_millis = current_millis;
 }
 
 void check_eg_sensor() {
@@ -193,7 +198,7 @@ void calc_eg_rpm() {
 
   // calculate raw rpm
   unsigned int eg_rpm_raw_prev = eg_rpm_raw;
-  eg_rpm_raw = (eg_count - eg_count_prev)*eg_count2rpm_num/eg_count2rpm_denom;
+  eg_rpm_raw = (eg_count - eg_count_prev)*eg_count2rpm;
 
   // calculate filtered rpm
   eg_rpm = eg_filt_const_1*(eg_rpm_raw + eg_rpm_raw_prev) + eg_filt_const_2*eg_rpm/FILT_GAIN;
@@ -207,7 +212,7 @@ void calc_gb_rpm() {
   
   // calculate raw rpm
   unsigned int gb_rpm_raw_prev = gb_rpm_raw;
-  gb_rpm_raw = (gb_count - gb_count_prev)*gb_count2rpm_num/gb_count2rpm_denom;
+  gb_rpm_raw = (gb_count - gb_count_prev)*gb_count2rpm;
 
   // calculate filtered rpm
   gb_rpm = gb_filt_const_1*(gb_rpm_raw + gb_rpm_raw_prev) + gb_filt_const_2*gb_rpm/FILT_GAIN;
