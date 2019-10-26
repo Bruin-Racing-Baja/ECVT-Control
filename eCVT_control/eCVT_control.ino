@@ -48,7 +48,6 @@ const unsigned int EG_TORQUE = 2700 * FILT_GAIN / RPM_PREDIV;
 const unsigned int EG_POWER = 3400 * FILT_GAIN / RPM_PREDIV;
 // ***** GB ***** //
 const unsigned int GB_LAUNCH = 80 * FILT_GAIN / RPM_PREDIV; // ~ 5 mph
-const unsigned int GB_TORQUE = 128 * FILT_GAIN / RPM_PREDIV; // ~ 8 mph
 const unsigned int GB_POWER = 621.6 * FILT_GAIN / RPM_PREDIV; // ~ 39 mph
 
 // controller
@@ -70,8 +69,8 @@ unsigned long eg_count_prev = 0;
 //  1 rev/tick
 //  60 s/min
 const unsigned int eg_count2rpm = 1e3*60/control_period/RPM_PREDIV;
-const byte eg_filt_const_1 = 88;
-const byte eg_filt_const_2 = -77;
+const int eg_filt_const_1 = 88;
+const int eg_filt_const_2 = -77;
 unsigned int eg_rpm_raw(0); // [rpm/10]
 unsigned int eg_rpm(0); // [rpm*10]
 
@@ -144,7 +143,7 @@ void control_loop() {
   // adjust reference
   if (gb_rpm > GB_POWER) {
     r_k = EG_POWER;
-  } else if (gb_rpm > GB_TORQUE) {
+  } else if (gb_rpm > GB_LAUNCH) {
     r_k = map(gb_rpm, GB_LAUNCH, GB_POWER, EG_LAUNCH, EG_POWER);
   } else {
     r_k = EG_LAUNCH;
