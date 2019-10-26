@@ -1,3 +1,10 @@
+/* eCVT_control.ino
+ * this sketch is a test of the encoder differential method for calculating rpm
+ * 
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ * created: 15 October, 2019
+ */
+
 // WARNING:
 // this script does not work right now because I neglected the fact that the engine triggers slower than the control loop and thus we will be calculating zero rpm approximately every other control cycle
 
