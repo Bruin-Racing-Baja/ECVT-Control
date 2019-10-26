@@ -1,3 +1,10 @@
+/* eCVT_Competition_Controller.ino
+ * version of the competition from Baja SAE California 2019, with a few tweaks made for readability and efficiency
+ * 
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu), Iou-Sheng Chang
+ * created: 15 May 2019
+ */
+
 #include <Servo.h>
 
 // PWM constants
@@ -145,15 +152,11 @@ void control_function() {
   u_k_min = U_K_ABS_MIN;
   u_k_max = U_K_ABS_MAX;
   // ***** LAUNCH ***** //
-  if (gearbox_rpm_ave < GB_LAUNCH) {
-    // u_k_max = 0;
-    if (engine_rpm_ave >= EG_TORQUE) {
-      u_k_min = U_K_LAUNCH_FAST;
-    } else if (engine_rpm_ave >= EG_ENGAGE) {
-      u_k_min = U_K_LAUNCH_SLOW; // this statement has no effect
-    }
+  if (gearbox_rpm_ave < GB_LAUNCH && engine_rpm_ave >= EG_TORQUE) {
+    u_k_min = U_K_LAUNCH_FAST;
   }
   // ***** POT LIMITS ***** //
+  current_pos = analogRead(pot_pin);
   if (current_pos >= pot_lim_out) {
     u_k_max = 0;
   } else if (current_pos <= pot_lim_in) {
@@ -174,8 +177,7 @@ void loop() {
   int engine_reading = analogRead(engine_pin);
   if (engine_reading > HF_HIGH) {
     engine_state = HIGH;
-  }
-  if (engine_reading < HF_LOW && engine_state == HIGH) {
+  } else if (engine_reading < HF_LOW && engine_state == HIGH) {
     engine_trigger_time = current_micros;
     engine_rpm = 60000000.0 / (engine_trigger_time - engine_last_trigger);
     engine_readings[engine_index] = engine_rpm;
@@ -188,11 +190,10 @@ void loop() {
   }
 
   // check gearbox rpm
-  int gb_reading = digitalRead(gb_pin);
-  if (digitalRead(gb_pin) == LOW) {
+  bool gb_reading = digitalRead(gb_pin);
+  if (gb_reading == LOW) {
     gb_state = LOW;
-  }
-  if (gb_reading == HIGH && gb_state == LOW) {
+  } else if (gb_reading == HIGH && gb_state == LOW) {
     gb_trigger_time = current_micros;
     gb_rpm = (11020408.0)/(gb_trigger_time - gb_last_trigger);
     gearbox_readings[gearbox_index] = gb_rpm;
@@ -203,17 +204,16 @@ void loop() {
 
   // control loop
   if (current_micros - last_control_time >= control_period) {
-    current_pos = analogRead(pot_pin);
     control_function();
     last_control_time = current_micros;
 
-  // Serial.print(r_k);
-  // Serial.print(" ");
-  // Serial.print(gearbox_rpm_ave);
-  // Serial.print(" ");
-  // Serial.print(engine_rpm_ave);
-  // Serial.print(" ");
-  // Serial.print(current_pos);
-  // Serial.print("\n");
+    // Serial.print(r_k);
+    // Serial.print(" ");
+    // Serial.print(gearbox_rpm_ave);
+    // Serial.print(" ");
+    // Serial.print(engine_rpm_ave);
+    // Serial.print(" ");
+    // Serial.print(current_pos);
+    // Serial.print("\n");
   }
 }
