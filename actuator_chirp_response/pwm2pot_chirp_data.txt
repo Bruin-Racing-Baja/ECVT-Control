@@ -1,4 +1,0 @@
-sheet2: 485, .2, 2, 10
-sheet3: 450, .2, 2, 10
-sheet4: 450, .2, 2, 10 engine on
-sheet5: 450, .2, 2, 10 engine on

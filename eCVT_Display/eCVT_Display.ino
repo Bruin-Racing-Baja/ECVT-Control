@@ -1,3 +1,10 @@
+/* eCVT_Display.ino
+ * runs the eCVT using last year's competition code with the addition of an I2C display
+ * 
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ * created: 3 October 2019
+ */
+
 #include <Servo.h>
 #include <Wire.h>
 #include <I2C_LCD.h>

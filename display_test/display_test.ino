@@ -1,5 +1,5 @@
 
-/* display.ino
+/* display_test.ino
  * this sketch tests the I2C display
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)

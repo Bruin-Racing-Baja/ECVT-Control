@@ -1,8 +1,8 @@
 /* actuator_stop.ino
- * this sketch writes a stop command to the actuator
+ * writes a stop command to the actuator
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
- * created: 3/10/19
+ * created: 10 March 2019
  */
 
 #include <Servo.h>

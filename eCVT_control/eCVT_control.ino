@@ -2,7 +2,7 @@
  * this sketch is a test of the encoder differential method for calculating rpm
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
- * created: 15 October, 2019
+ * created: 15 October 2019
  */
 
 // WARNING:
