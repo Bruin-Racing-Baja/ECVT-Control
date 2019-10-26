@@ -50,35 +50,24 @@ int current_pos(0);
 int r_k = EG_TORQUE;
 int e_k(0);
 int u_k(0);
-const int control_period = 20000; // [us]
-const double Kp = 1;
+const int control_period = 20e3; // [us]
+const int Kp = 1;
 unsigned long last_control_time(0);
 
 // engine sensor
 #define HF_HIGH 800
 #define HF_LOW 200
-#define ENGINE_WATCHDOG 1e6 // [us]
-const byte engine_pin = A3;
-bool engine_state = LOW;
-unsigned long engine_trigger_time(0);
-unsigned long engine_last_trigger(0);
-unsigned int engine_rpm(0);
+#define HALL_WATCHDOG 1e6 // [us]
+const byte eg_pin = A3;
+bool eg_state = LOW;
+unsigned long eg_last_trigger(0);
+unsigned int eg_rpm_raw(0);
 
 // gearbox sensor
 const byte gb_pin = 3;
 bool gb_state = HIGH;
-unsigned long gb_trigger_time(0);
 unsigned long gb_last_trigger(0);
-unsigned int gb_rpm(0);
-
-// moving average filters
-const size_t num_readings = 4;
-unsigned int engine_rpm_ave(0);
-byte engine_index = 0;
-unsigned int engine_readings[num_readings];
-unsigned int gearbox_rpm_ave(0);
-byte gearbox_index = 0;
-unsigned int gearbox_readings[num_readings];
+unsigned int gb_rpm_raw(0);
 
 void setup() {
 
@@ -95,26 +84,12 @@ void setup() {
   current_pos = analogRead(pot_pin);
 
   // setup engine sensor
-  pinMode(engine_pin, INPUT);
+  pinMode(eg_pin, INPUT);
   init_readings(engine_readings);
 
   // setup gearbox sensor
   pinMode(gb_pin, INPUT);
   init_readings(gearbox_readings);
-}
-
-void init_readings(unsigned int* readings) {
-  for (int i = 0; i < num_readings; i++) {
-    readings[i] = 0;
-  }
-}
-
-unsigned int rpm_average(const unsigned int* readings) {
-  unsigned int sum = 0;
-  for (int i = 0; i < num_readings; i++) {
-    sum += readings[i];
-  }
-  return (sum / num_readings);
 }
 
 void control_function() {
@@ -173,33 +148,32 @@ void loop() {
   // check time
   unsigned long current_micros = micros();
 
-  // check engine_rpm
-  int engine_reading = analogRead(engine_pin);
-  if (engine_reading > HF_HIGH) {
-    engine_state = HIGH;
-  } else if (engine_reading < HF_LOW && engine_state == HIGH) {
-    engine_trigger_time = current_micros;
-    engine_rpm = 60000000.0 / (engine_trigger_time - engine_last_trigger);
-    engine_readings[engine_index] = engine_rpm;
-    engine_index = (engine_index + 1) % num_readings;
-    engine_last_trigger = engine_trigger_time;
-    engine_state = LOW;
-  } else if (current_micros - engine_last_trigger >= ENGINE_WATCHDOG) {
-    init_readings(engine_readings);
-    engine_last_trigger = current_micros;
+  // check engine rpm
+  int eg_reading = analogRead(eg_pin);
+  if (eg_reading > HF_HIGH) {
+    eg_state = HIGH;
+  } else if (eg_reading < HF_LOW && eg_state == HIGH) {
+    eg_rpm_raw = 60000000.0/(current_micros - eg_last_trigger);
+    eg_last_trigger = current_micros;
+    eg_state = LOW;
+  }
+  if (current_micros - eg_last_trigger >= HALL_WATCHDOG) {
+    eg_rpm_raw = 0;
+    eg_last_trigger = current_micros;
   }
 
   // check gearbox rpm
   bool gb_reading = digitalRead(gb_pin);
-  if (gb_reading == LOW) {
-    gb_state = LOW;
-  } else if (gb_reading == HIGH && gb_state == LOW) {
-    gb_trigger_time = current_micros;
-    gb_rpm = (11020408.0)/(gb_trigger_time - gb_last_trigger);
-    gearbox_readings[gearbox_index] = gb_rpm;
-    gearbox_index = (gearbox_index + 1) % num_readings;
-    gb_last_trigger = gb_trigger_time;
+  if (gb_reading == HIGH) {
     gb_state = HIGH;
+  } else if (gb_reading == LOW && gb_state == HIGH) {
+    gb_rpm_raw = (11020408.0)/(current_micros - gb_last_trigger);
+    gb_last_trigger = current_micros;
+    gb_state = LOW;
+  }
+  if (current_micros - gb_last_trigger >= HALL_WATCHDOG) {
+    gb_rpm_raw = 0;
+    gb_last_trigger = current_micros;
   }
 
   // control loop
