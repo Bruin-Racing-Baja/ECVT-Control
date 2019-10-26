@@ -50,6 +50,7 @@ unsigned long last_control_time(0);
 // engine sensor
 #define HF_HIGH 800
 #define HF_LOW 200
+#define ENGINE_WATCHDOG 1e6 // [us]
 const byte engine_pin = A3;
 bool engine_state = LOW;
 unsigned long engine_trigger_time(0);
@@ -78,7 +79,7 @@ void setup() {
   bool good_boy = true;
 
   // open serial connection
-//  Serial.begin(9600);
+  // Serial.begin(9600);
 
   // setup actuator
   Actuator.attach(actuator_pin);
@@ -181,7 +182,7 @@ void loop() {
     engine_index = (engine_index + 1) % num_readings;
     engine_last_trigger = engine_trigger_time;
     engine_state = LOW;
-  } else if (current_micros - engine_last_trigger >= 1000000) {
+  } else if (current_micros - engine_last_trigger >= ENGINE_WATCHDOG) {
     init_readings(engine_readings);
     engine_last_trigger = current_micros;
   }
@@ -206,13 +207,13 @@ void loop() {
     control_function();
     last_control_time = current_micros;
 
-//    Serial.print(r_k);
-//    Serial.print(" ");
-//    Serial.print(gearbox_rpm_ave);
-//    Serial.print(" ");
-//    Serial.print(engine_rpm_ave);
-//    Serial.print(" ");
-//   Serial.print(current_pos);
-//   Serial.print("\n");
+  // Serial.print(r_k);
+  // Serial.print(" ");
+  // Serial.print(gearbox_rpm_ave);
+  // Serial.print(" ");
+  // Serial.print(engine_rpm_ave);
+  // Serial.print(" ");
+  // Serial.print(current_pos);
+  // Serial.print("\n");
   }
 }
