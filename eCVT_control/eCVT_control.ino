@@ -1,3 +1,6 @@
+// WARNING:
+// this script does not work right now because I neglected the fact that the engine triggers slower than the control loop and thus we will be calculating zero rpm approximately every other control cycle
+
 #include <Servo.h>
 
 // PWM/control signal constants
@@ -127,9 +130,9 @@ void control_loop() {
   calc_eg_rpm();
   calc_gb_rpm();
 
-  // that's all for now, print and return
-  Serial.println(eg_count);
-  return;
+  // // that's all for now, print and return
+  // Serial.println(eg_rpm_raw);
+  // return;
 
   // adjust reference
   if (gb_rpm > GB_POWER) {
