@@ -22,63 +22,54 @@ const byte actuator_pin = 9;
 #define POT_MIN 163
 #define POT_MAX 254
 #define POT_ENGAGE 245
-int pot_lim_out = POT_MAX;
-int pot_lim_in = POT_MIN;
-int u_k_min = U_K_ABS_MIN;
-int u_k_max = U_K_ABS_MAX;
+unsigned int pot_lim_out = POT_MAX;
+unsigned int pot_lim_in = POT_MIN;
+int u_k_min = U_K_ABS_MIN; // [dpwm]
+int u_k_max = U_K_ABS_MAX; // [dpwm]
 const byte pot_pin = A1;
-int current_pos(0);
+unsigned int current_pos(0);
+
+// filters
+const double eg_filt_const_1 = .557;
+const double eg_filt_const_2 = -.114;
+const double gb_filt_const_1 = .557;
+const double gb_filt_const_2 = -.114;
 
 // reference signals
 // ***** ENGINE ***** //
-#define EG_IDLE 1750
-#define EG_ENGAGE 2100
-#define EG_LAUNCH 2600
-#define EG_TORQUE 2700
-#define EG_POWER 3400
+const unsigned int EG_IDLE = 1750;
+const unsigned int EG_ENGAGE = 2100;
+const unsigned int EG_LAUNCH = 2600;
+const unsigned int EG_TORQUE = 2700;
+const unsigned int EG_POWER = 3400;
 // ***** GB ***** //
-#define GB_LAUNCH 80  // ~ 5 mph
-#define GB_POWER 621.6  // ~ 39 mph
-// ***** ON JACK STAND ***** //
-//#define RPM_IDLE 67
-//#define RPM_2400 93
-//#define RPM_FULLTHROTTLE 530
-//#define RPM_2800 135
-//#define RPM_3200 350
+const unsigned int GB_LAUNCH = 80; // ~ 5 mph
+const unsigned int GB_POWER = 621.6; // ~ 39 mph
 
 // controller
 int r_k = EG_TORQUE;
-int e_k(0);
-int u_k(0);
-const int control_period = 20000; // [us]
-const double Kp = 1;
-unsigned long last_control_time(0);
+const unsigned int control_period = 40e3; // [us]
+const byte Kp = 1;
+unsigned long last_control_time(0); // [us]
 
 // engine sensor
 #define HF_HIGH 800
 #define HF_LOW 200
-#define ENGINE_WATCHDOG 1e6 // [us]
-const byte engine_pin = A3;
-bool engine_state = LOW;
-unsigned long engine_trigger_time(0);
-unsigned long engine_last_trigger(0);
-unsigned int engine_rpm(0);
+#define HALL_WATCHDOG 1e6 // [us]
+const byte eg_pin = A3;
+bool eg_state(LOW);
+unsigned long eg_last_trigger(0); // [us]
+double eg_rpm(0); // [rpm*10]
+double eg_rpm_raw(0); // [rpm/10]
+double eg_rpm_raw_prev(0); // [rpm/10]
 
 // gearbox sensor
 const byte gb_pin = 3;
-bool gb_state = HIGH;
-unsigned long gb_trigger_time(0);
-unsigned long gb_last_trigger(0);
-unsigned int gb_rpm(0);
-
-// moving average filters
-const size_t num_readings = 4;
-unsigned int engine_rpm_ave(0);
-byte engine_index = 0;
-unsigned int engine_readings[num_readings];
-unsigned int gearbox_rpm_ave(0);
-byte gearbox_index = 0;
-unsigned int gearbox_readings[num_readings];
+bool gb_state(LOW);
+unsigned long gb_last_trigger(0); // [us]
+double gb_rpm(0); // [rpm*10]
+double gb_rpm_raw(0); // [rpm/10]
+double gb_rpm_raw_prev(0); // [rpm/10]
 
 void setup() {
 
@@ -86,7 +77,7 @@ void setup() {
   bool good_boy = true;
 
   // open serial connection
-  // Serial.begin(9600);
+//  Serial.begin(9600);
 
   // setup actuator
   Actuator.attach(actuator_pin);
@@ -95,54 +86,36 @@ void setup() {
   current_pos = analogRead(pot_pin);
 
   // setup engine sensor
-  pinMode(engine_pin, INPUT);
-  init_readings(engine_readings);
+  pinMode(eg_pin, INPUT);
 
   // setup gearbox sensor
   pinMode(gb_pin, INPUT);
-  init_readings(gearbox_readings);
-}
 
-void init_readings(unsigned int* readings) {
-  for (int i = 0; i < num_readings; i++) {
-    readings[i] = 0;
-  }
-}
-
-unsigned int rpm_average(const unsigned int* readings) {
-  unsigned int sum = 0;
-  for (int i = 0; i < num_readings; i++) {
-    sum += readings[i];
-  }
-  return (sum / num_readings);
+//  Serial.println(EG_IDLE);
+//  Serial.println(EG_ENGAGE);
+//  Serial.println(EG_LAUNCH);
+//  Serial.println(EG_TORQUE);
+//  Serial.println(EG_POWER);
 }
 
 void control_function() {
 
-  // calculate gearboxrpm
-  gearbox_rpm_ave = rpm_average(gearbox_readings);
+  // calculate rpms
+  gb_rpm = gb_filt_const_1*(gb_rpm_raw + gb_rpm_raw_prev) + gb_filt_const_2*gb_rpm;
+  eg_rpm = eg_filt_const_1*(eg_rpm_raw + eg_rpm_raw_prev) + eg_filt_const_2*eg_rpm;
 
   // adjust reference
-  if (gearbox_rpm_ave > GB_POWER) {
-    r_k = EG_POWER;
-  } else if (gearbox_rpm_ave > GB_LAUNCH) {
-    r_k = map(gearbox_rpm_ave, GB_LAUNCH, GB_POWER, EG_LAUNCH, EG_POWER);
-  } else {
-    r_k = EG_LAUNCH;
-  }
+//  if (gb_rpm > GB_POWER) {
+//    r_k = EG_POWER;
+//  } else if (gb_rpm > GB_LAUNCH) {
+//    r_k = map(gb_rpm, GB_LAUNCH, GB_POWER, EG_LAUNCH, EG_POWER);
+//  } else {
+//    r_k = EG_LAUNCH;
+//  }
 
-  // calculate engine rpm
-  engine_rpm_ave = rpm_average(engine_readings);
-
-  // compute error
-  e_k = r_k - engine_rpm_ave;
-
-  // compute control signal
-  u_k = Kp*e_k;
-
-  // change pot outer limit
-  if (engine_rpm_ave <= EG_ENGAGE) {
-    pot_lim_out = map(engine_rpm_ave, EG_IDLE, EG_ENGAGE, POT_MAX, POT_ENGAGE);
+    // change pot outer limit
+  if (eg_rpm <= EG_ENGAGE) {
+    pot_lim_out = map(eg_rpm, EG_IDLE, EG_ENGAGE, POT_MAX, POT_ENGAGE);
   } else {
     pot_lim_out = POT_ENGAGE;
   }
@@ -152,7 +125,7 @@ void control_function() {
   u_k_min = U_K_ABS_MIN;
   u_k_max = U_K_ABS_MAX;
   // ***** LAUNCH ***** //
-  if (gearbox_rpm_ave < GB_LAUNCH && engine_rpm_ave >= EG_TORQUE) {
+  if (gb_rpm < GB_LAUNCH && eg_rpm >= EG_TORQUE) {
     u_k_min = U_K_LAUNCH_FAST;
   }
   // ***** POT LIMITS ***** //
@@ -162,10 +135,21 @@ void control_function() {
   } else if (current_pos <= pot_lim_in) {
     u_k_min = 0;
   }
+
+  // compute error
+  int e_k = (int) r_k - eg_rpm; // [rpm*10]
+
+  // compute control signal
+  int u_k = Kp*e_k; // [dpwm*10]
+  u_k = u_k; // [dpwm]
   u_k = constrain(u_k, u_k_min, u_k_max);
 
   // write to actuator
   Actuator.writeMicroseconds(u_k + PW_STOP);
+
+  // update previous filter values
+  gb_rpm_raw_prev = gb_rpm_raw;
+  eg_rpm_raw_prev = eg_rpm_raw;
 }
 
 void loop() {
@@ -173,33 +157,32 @@ void loop() {
   // check time
   unsigned long current_micros = micros();
 
-  // check engine_rpm
-  int engine_reading = analogRead(engine_pin);
-  if (engine_reading > HF_HIGH) {
-    engine_state = HIGH;
-  } else if (engine_reading < HF_LOW && engine_state == HIGH) {
-    engine_trigger_time = current_micros;
-    engine_rpm = 60000000.0 / (engine_trigger_time - engine_last_trigger);
-    engine_readings[engine_index] = engine_rpm;
-    engine_index = (engine_index + 1) % num_readings;
-    engine_last_trigger = engine_trigger_time;
-    engine_state = LOW;
-  } else if (current_micros - engine_last_trigger >= ENGINE_WATCHDOG) {
-    init_readings(engine_readings);
-    engine_last_trigger = current_micros;
+  // check engine rpm
+  int eg_reading = analogRead(eg_pin);
+  if (eg_reading > HF_HIGH) {
+    eg_state = HIGH;
+  } else if (eg_reading < HF_LOW && eg_state == HIGH) {
+    eg_rpm_raw = 60.0e6/(current_micros - eg_last_trigger);
+    eg_last_trigger = current_micros;
+    eg_state = LOW;
+  }
+  if (current_micros - eg_last_trigger >= HALL_WATCHDOG) {
+    eg_rpm_raw = 0;
+    eg_last_trigger = current_micros;
   }
 
   // check gearbox rpm
   bool gb_reading = digitalRead(gb_pin);
-  if (gb_reading == LOW) {
-    gb_state = LOW;
-  } else if (gb_reading == HIGH && gb_state == LOW) {
-    gb_trigger_time = current_micros;
-    gb_rpm = (11020408.0)/(gb_trigger_time - gb_last_trigger);
-    gearbox_readings[gearbox_index] = gb_rpm;
-    gearbox_index = (gearbox_index + 1) % num_readings;
-    gb_last_trigger = gb_trigger_time;
+  if (gb_reading == HIGH) {
     gb_state = HIGH;
+  } else if (gb_reading == LOW && gb_state == HIGH) {
+    gb_rpm_raw = (11020408.0)/(current_micros - gb_last_trigger);
+    gb_last_trigger = current_micros;
+    gb_state = LOW;
+  }
+  if (current_micros - gb_last_trigger >= HALL_WATCHDOG) {
+    gb_rpm_raw = 0;
+    gb_last_trigger = current_micros;
   }
 
   // control loop
@@ -209,11 +192,14 @@ void loop() {
 
     // Serial.print(r_k);
     // Serial.print(" ");
-    // Serial.print(gearbox_rpm_ave);
-    // Serial.print(" ");
-    // Serial.print(engine_rpm_ave);
-    // Serial.print(" ");
-    // Serial.print(current_pos);
-    // Serial.print("\n");
+//     Serial.print(eg_rpm_raw);
+//     Serial.print(" ");
+//     Serial.print(eg_rpm);
+//     Serial.print(" ");
+//     Serial.print(gb_rpm_raw);
+//    Serial.print(" ");
+//    Serial.print(gb_rpm);
+//     Serial.print(current_pos);
+//     Serial.print("\n");
   }
 }
