@@ -2,21 +2,21 @@ unsigned long last_millis(0);
 int count = 0;
 
 void setup() {
-  Serial.begin(115200);
-  TCCR1A = 0x0;
-  TCCR1B = 0x0;
-  TCCR1B |= (1 << CS11) | (11 << CS10); // prescaler 64
-  TCCR1B |= (1 << WGM12); // CTC mode
-  TIMSK1 |= (1 << OCIE1A); // enable interrupt for OCR1A
-  OCR1A = 249; // interrupt at 1ms
+  Serial.begin(9600);
+  TCCR2A = 0x0;
+  TCCR2A |= (1 << WGM21); // CTC mode on OCR2A
+  TCCR2B = 0x0;
+  TCCR2B |= (1 << CS22); // prescaler 64
+  TIMSK2 |= (1 << OCIE2A); // enable OCR2A interrupt
+  OCR2A = 249; // interrupt at 1.000 ms
 }
 
-ISR(TIMER1_COMPA_vect) {
+ISR(TIMER2_COMPA_vect) {
   count += 1;
 }
 
 void loop() {
-  if (count == 1000) {
+  if (count >= 1000) {
     Serial.println(millis());
     count = 0;
   }
