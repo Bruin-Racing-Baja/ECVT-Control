@@ -13,8 +13,8 @@ const byte actuator_pin = 9;
 
 // define controller constants
 const int control_period = 20; // [ms]
-unsigned long last_control_time(0);
 const int Kp = 20;
+byte t = 0;
 
 // define potentiometer parameters
 #define POT_MIN 163
@@ -42,6 +42,17 @@ void setup() {
   // attach actuator
   Actuator.attach(actuator_pin, PW_MIN, PW_MAX);
 
+  // setup timer interrupts
+  TCCR2A = 0x0;
+  // TCCR2A |= (1 << WGM21); // CTC mode on OCR2A
+  TCCR2B = 0x0;
+  TCCR2B |= (1 << CS22); // prescaler 64
+  TIMSK2 |= (1 << OCIE2A); // enable OCR2A interrupt
+  OCR2A = 249; // interrupt at 1.000 ms
+}
+
+ISR(TIMER2_COMPA_vect) {
+  t += 1;
 }
 
 void control_function() {
@@ -64,14 +75,14 @@ void control_function() {
   Serial.print(current_pos);
   Serial.print(" ");
   Serial.print(r_k);
+  // Serial.print(" ");
+  // Serial.print(millis());
   Serial.print("\n");
 }
 
 void loop() {
-    unsigned long current_millis = millis();
-
-    if (current_millis - last_control_time >= control_period) {
-        control_function();
-        last_control_time = current_millis;
+    if (t >= control_period) {
+      control_function();
+      t = 0;
     }
 }
