@@ -1,5 +1,5 @@
 /* eCVT_Dev_Controller.ino
- * experimental controller which will include test features for a given branch
+ * experimental controller which will include test features for a given branch. the version on the master branch should always be a stable build.
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
  * created: 2 November 2019
