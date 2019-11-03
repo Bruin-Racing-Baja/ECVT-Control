@@ -1,8 +1,8 @@
-/* eCVT_Competition_Controller.ino
- * version of the competition from Baja SAE California 2019, with a few tweaks made for readability and efficiency
+/* eCVT_Dev_Controller.ino
+ * experimental controller which will include test features for a given branch
  * 
- * author: Tyler McCown (tylermccown@engineering.ucla.edu), Iou-Sheng Chang
- * created: 15 May 2019
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ * created: 2 November 2019
  */
 
 #include <Servo.h>
