@@ -30,10 +30,10 @@ const byte pot_pin = A1;
 unsigned int current_pos(0);
 
 // filters
-const double eg_filt_const_1 = .557;
-const double eg_filt_const_2 = -.114;
-const double gb_filt_const_1 = .557;
-const double gb_filt_const_2 = -.114;
+const double eg_filt_const_1 = .112;
+const double eg_filt_const_2 = .777;
+const double gb_filt_const_1 = .059;
+const double gb_filt_const_2 = .882;
 
 // reference signals
 // ***** ENGINE ***** //
