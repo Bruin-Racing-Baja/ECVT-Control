@@ -1,9 +1,18 @@
-#include "Wire.h"
+/* PCF8593_test.ino
+ * 
+ * Functionality testing of the PCF8593 event counter IC. Functions here
+ * have been outsourced to a library and should not be implemented as shown
+ * 
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ * created: 9 February 2020
+ */
+
+#include <Wire.h>
 
 byte int_pin = 2;
 
 // i2c address
-byte pcf8593_address = 0x00 | 1<<6 | 1<<4 | 1<<0; // 0x51, 81
+byte pcf8593_address = 0x00 | 1<<6 | 1<<4 | 1<<0; // B1010001, 0x51, 81
 
 byte csr = 0x00;
 byte alarm_ctrl = 0x00;
@@ -11,25 +20,32 @@ byte alarm_val = 0x00;
 
 void setup() {
 
-  // control and status register (00j)
+  // overwrite current configuration
+  //  reset_pcf8593();
+
+  // control and status register (00h)
   csr |= 1<<5; // event counter mode
   csr |= 1<<2; // enable alarm control register (08h)
 
   // alarm control register (08h)
-  alarm_ctrl |= 1<<4; // event alarm
-  alarm_ctrl |= 1<<7; // alarm interrupt enable
-  alarm_val = decToBcd(10); // alarm at 99 counts
+  alarm_ctrl |= 0<<4; // event alarm
+  alarm_ctrl |= 0<<7; // alarm no-interrupt enable
+  //  alarm_val = decToBcd(10); // alarm at 99 counts
 
-  digitalWrite(7, HIGH);
+  //  digitalWrite(7, HIGH);
   Wire.begin(); // join i2c bus
 
-  pinMode(2, INPUT);
+  // input pin for interrupt
+  //  pinMode(2, INPUT);
   
   Serial.begin(9600);
 
   // register setup
   set_csr();
+  Serial.println(csr, BIN);
+
   reset_counters();
+  
 //  set_alarm();
 
   // attach counter overflow interrupt
@@ -45,7 +61,7 @@ void loop() {
 void set_csr() {
   // sets the control and status register (0x00h) of the PCF8593
   Wire.beginTransmission(pcf8593_address); // transmit to device
-  Wire.write(0x00); // set register pointer to command register
+  Wire.write(0x00); // set register pointer to csr
   Wire.write(csr); // location 00h
   Wire.endTransmission();
 }
@@ -60,16 +76,16 @@ void reset_counters() {
   Wire.endTransmission();
 }
 
-//void set_alarm() {
-//  // sets the alarm control register (0x08h) of the PCF8593
-//  Wire.beginTransmission(pcf8593_address);
-//  Wire.write(0x08); // set register pointer to alarm control register
-//  Wire.write(alarm_ctrl); // 0x08h
-//  Wire.write(alarm_val); // 0x09h
-//  Wire.write(0x00); // 0x0Ah
-//  Wire.write(0x00); // 0x0Bh
-//  Wire.endTransmission();
-//}
+void set_alarm() {
+  // sets the alarm control register (0x08h) of the PCF8593
+  Wire.beginTransmission(pcf8593_address);
+  Wire.write(0x08); // set register pointer to alarm control register
+  Wire.write(alarm_ctrl); // 0x08h
+  Wire.write(decToBcd(0)); // 0x09h
+  Wire.write(decToBcd(0)); // 0x0Ah
+  Wire.write(decToBcd(0)); // 0x0Bh
+  Wire.endTransmission();
+}
 
 unsigned long get_count() {
   // requests and returns the count from the PCF8593
@@ -106,20 +122,3 @@ byte decToBcd(byte value) {
   // convert regular decimal to binary coded decimal
   return ((value/10)*16 + value%10);
 }
-
-//void overflow_isr() {
-//  detachInterrupt(digitalPinToInterrupt(int_pin));
-//  Serial.println("overflow");
-//  // unset alarm flag
-////  digitalWrite(7, LOW);
-////  delay(100);
-////  digitalWrite(7, HIGH);
-//  Wire.beginTransmission(pcf8593_address); // transmit to device
-//  Wire.write(0x00); // set register pointer to command register
-//  Wire.write(csr); // location 00h
-//  Wire.write(0x00); // location 01h
-//  Wire.write(0x00); // location 02h
-//  Wire.write(0x00); // location 03h
-//  Wire.endTransmission();
-//  attachInterrupt(digitalPinToInterrupt(int_pin), overflow_isr, FALLING);
-//}
