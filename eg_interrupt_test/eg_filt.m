@@ -1,5 +1,6 @@
 % eg_filt.m
-% this script tests a digital filter on rpm data taken from the engine
+% this script tests a digital filter on rpm data taken from the engine hall
+% sensor using interrupts
 
 clear;
 clc;
