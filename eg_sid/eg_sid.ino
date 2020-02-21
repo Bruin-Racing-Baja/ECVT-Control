@@ -30,7 +30,7 @@ const byte pot_pin = A1;
 int pos_now(0);
 
 // controller
-const byte control_period = 20;
+const unsigned int control_period = 20e3;
 unsigned long last_control_time(0);
 const int Kp = 50;
 int pos_ref(0);
@@ -48,35 +48,32 @@ const double sine_freq = .2; // [Hz]
 const int triangle_slope = 40; // [pot counts/sec]
 const int triangle_max = POT_ENGAGE - 2; // [pot counts]
 const int triangle_min = POT_MIN + 2; // [pot counts]
-const long triangle_per = 2*(triangle_max - triangle_min)*1000L/triangle_slope; // [ms]
+const long triangle_per = 2*(triangle_max - triangle_min)*1000000L/triangle_slope; // [ms]
 
 // logarithmic chirp signal
 const double chirp_w1 = 2*PI*.01; // [2pi*Hz]
 const double chirp_w2 = 2*PI*10; // [2pi*Hz]
-const int chirp_per = 20; // [s]
+const int chirp_per = 80; // [s]
 double chirp_alpha = 1./chirp_per*log(chirp_w2/chirp_w1);
 
 // reference pot signal
 byte ref_pot_pin = A2;
 
 // constant signal
-int const_pos = POT_ENGAGE;
+int const_pos = POT_MAX;
 
 // engine sensor (PCF8593 interface)
 byte csr_val = 0x00 | 1<<5 | 0<<7; // set control and status register to event counter mode with alarm control enabled
-byte acr = 0x00 | 0<<4 | 0<<7; // set alarm control register to something
-byte acr_val = decToBcd(0); // alarm at 0 counts
 long eg_last_count(0);
 int eg_rpm(0);
 double eg_pulseToRpm = 35.714285714285715;
-// double eg_pulseToRpm = 17.857142857142858;
 
 // gearbox sensor
 const byte gb_pin = 3;
 bool gb_state(LOW);
 unsigned long gb_last_trigger(0);
 int gb_rpm(0);
-double gb_conversion_factor = 11020.408163265307; // [(rot*ms)/(count*min)]
+double gb_conversion_factor = 11020408.163265307; // [(rot*us)/(count*min)]
 
 void setup() {
 
@@ -103,17 +100,13 @@ void setup() {
   pinMode(gb_pin, INPUT);
 
   // setup timer interrupt
-  OCR0A = 0xFF;
-  TIMSK0 |= _BV(OCIE0A);
+  // OCR0A = 0xFF;
+  // TIMSK0 |= _BV(OCIE0A);
 }
 
-SIGNAL(TIMER0_COMPA_vect) {
-  unsigned long current_millis = millis();
-  if (current_millis - last_control_time >= control_period) {
-      control_function(current_millis);
-      last_control_time = current_millis;
-    }
-}
+// SIGNAL(TIMER0_COMPA_vect) {
+// 
+// }
 
 void control_function(unsigned long t) {
 
@@ -145,18 +138,18 @@ void control_function(unsigned long t) {
 }
 
 int sine(unsigned long t) {
-  return sine_off + sine_amp*sin(2*PI*sine_freq*t/1000.);
+  return sine_off + sine_amp*sin(2*PI*sine_freq*t/1.e6);
 }
 
 int triangle(unsigned long t) {
   t = t % triangle_per;
   bool rising = (t < triangle_per/2);
-  return (triangle_min + triangle_slope*t/1000)*rising + (triangle_max - triangle_slope*(t-triangle_per/2)/1000)*(1-rising);
+  return (triangle_min + triangle_slope*t/1.e6)*rising + (triangle_max - triangle_slope*(t-triangle_per/2)/1.e6)*(1-rising);
 }
 
 int chirp(unsigned long t) {
-  t = t % (1000*chirp_per);
-  double f = chirp_w1/chirp_alpha*(exp(chirp_alpha*t/1000) - 1);
+  t = t % (1000000*chirp_per);
+  double f = chirp_w1/chirp_alpha*(exp(chirp_alpha*t/1.e6) - 1);
   return sine_off + sine_amp*sin(f);
 }
 
@@ -171,15 +164,20 @@ int const_ref(unsigned long t) {
 
 void loop() {
 
-  unsigned long current_millis = millis();
+  unsigned long current_micros = micros();
 
   // // check gearbox rpm
   bool gb_reading = digitalRead(gb_pin);
   if (gb_reading == HIGH) {
     gb_state = HIGH;
   } else if (gb_reading == LOW && gb_state == HIGH) {
-    gb_rpm = gb_conversion_factor/(current_millis - gb_last_trigger);
-    gb_last_trigger = current_millis;
+    gb_rpm = gb_conversion_factor/(current_micros - gb_last_trigger);
+    gb_last_trigger = current_micros;
     gb_state = LOW;
   }
+
+  if (current_micros - last_control_time >= control_period) {
+      control_function(current_micros);
+      last_control_time = current_micros;
+    }
 }
