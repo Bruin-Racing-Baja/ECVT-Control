@@ -19,7 +19,7 @@
 // actuator
 Servo Actuator;
 const byte actuator_pin = 9;
-#define POT_MIN 163
+#define POT_MIN 166
 #define POT_MAX 254
 #define POT_ENGAGE 245
 int pot_lim_out = POT_MAX;
@@ -32,32 +32,44 @@ int pos_now(0);
 // controller
 const byte control_period = 20;
 unsigned long last_control_time(0);
-const int Kp = 6;
+const int Kp = 50;
 int pos_ref(0);
 int pos_error(0);
 int u_k(0);
 int u_k_final(0);
-int (*signal_function)(unsigned long) = &sine;
+int (*signal_function)(unsigned long) = &const_ref;
 
 // sine signal
 const int sine_amp = (POT_ENGAGE - POT_MIN)/2 - 4; // [pot counts]
 const int sine_off = (POT_ENGAGE + POT_MIN)/2; // [pot counts]
-const double sine_freq = .5; // [Hz]
+const double sine_freq = .2; // [Hz]
 
 // triangle signal
 const int triangle_slope = 40; // [pot counts/sec]
 const int triangle_max = POT_ENGAGE - 2; // [pot counts]
 const int triangle_min = POT_MIN + 2; // [pot counts]
-// const int triangle_val = triangle_max; // [pot counts]
 const long triangle_per = 2*(triangle_max - triangle_min)*1000L/triangle_slope; // [ms]
+
+// logarithmic chirp signal
+const double chirp_w1 = 2*PI*.01; // [2pi*Hz]
+const double chirp_w2 = 2*PI*10; // [2pi*Hz]
+const int chirp_per = 20; // [s]
+double chirp_alpha = 1./chirp_per*log(chirp_w2/chirp_w1);
+
+// reference pot signal
+byte ref_pot_pin = A2;
+
+// constant signal
+int const_pos = POT_ENGAGE;
 
 // engine sensor (PCF8593 interface)
 byte csr_val = 0x00 | 1<<5 | 0<<7; // set control and status register to event counter mode with alarm control enabled
 byte acr = 0x00 | 0<<4 | 0<<7; // set alarm control register to something
 byte acr_val = decToBcd(0); // alarm at 0 counts
 long eg_last_count(0);
-int eg_rpm(3700);
+int eg_rpm(0);
 double eg_pulseToRpm = 35.714285714285715;
+// double eg_pulseToRpm = 17.857142857142858;
 
 // gearbox sensor
 const byte gb_pin = 3;
@@ -107,16 +119,15 @@ void control_function(unsigned long t) {
 
   // actuator position controller
   pos_ref = signal_function(t);
-  // pos_now = analogRead(pot_pin);
-  pos_now = POT_MAX;
+  pos_now = analogRead(pot_pin);
   pos_error = pos_ref - pos_now;
   u_k = Kp*pos_error;
   u_k_final = constrain(u_k, u_k_min, u_k_max);
   Actuator.writeMicroseconds(u_k_final + PW_STOP);
 
   // engine rpm
-  long eg_count = get_count();
-  eg_rpm = (eg_count - eg_last_count)*eg_pulseToRpm;
+  // long eg_count = get_count();
+  // eg_rpm = (eg_count - eg_last_count)*eg_pulseToRpm;
 
   // print data
   Serial.print(pos_ref);
@@ -125,9 +136,12 @@ void control_function(unsigned long t) {
   Serial.print(",");
   Serial.print(eg_rpm);
   Serial.print(",");
-  Serial.println(gb_rpm);
+  Serial.print(gb_rpm);
+  // Serial.print(",");
+  // Serial.print(t);
+  Serial.print("\n");
 
-  eg_last_count = eg_count;
+  // eg_last_count = eg_count;
 }
 
 int sine(unsigned long t) {
@@ -138,6 +152,21 @@ int triangle(unsigned long t) {
   t = t % triangle_per;
   bool rising = (t < triangle_per/2);
   return (triangle_min + triangle_slope*t/1000)*rising + (triangle_max - triangle_slope*(t-triangle_per/2)/1000)*(1-rising);
+}
+
+int chirp(unsigned long t) {
+  t = t % (1000*chirp_per);
+  double f = chirp_w1/chirp_alpha*(exp(chirp_alpha*t/1000) - 1);
+  return sine_off + sine_amp*sin(f);
+}
+
+int pot_ref(unsigned long t) {
+  int pot_reading = analogRead(ref_pot_pin);
+  return map(pot_reading, 0, 1023, POT_MIN, POT_ENGAGE);
+}
+
+int const_ref(unsigned long t) {
+  return const_pos;
 }
 
 void loop() {
