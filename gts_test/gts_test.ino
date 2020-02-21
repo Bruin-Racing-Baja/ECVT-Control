@@ -16,7 +16,7 @@ byte alarm_val = 0x00;
 unsigned long count = 0;
 unsigned long last_count = 0;
 double engine_pulseToRpm = 35.714285714285715;
-double rpm = 0;
+int rpm = 0;
 
 void setup() {
 
