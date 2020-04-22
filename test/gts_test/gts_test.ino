@@ -1,6 +1,7 @@
 /* gts_test.ino
  *
- * test script for measuring engine rpm from a MLX90217 geartooth sensor and a PCF8593 event counter
+ * test script for measuring engine RPM from a MLX90217 geartooth sensor and a
+ * PCF8593 event counter
  *
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
  * created: 9 February 2020

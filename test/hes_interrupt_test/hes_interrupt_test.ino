@@ -1,3 +1,11 @@
+/* hes_interrupt_test.ino
+ *
+ * tests engine RPM calculation based on an interrupt activated once per engine
+ * revolution due to an analog hall sensor
+ *
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ */
+
 const byte eg_pin = 2;
 volatile double eg_rpm(0);
 volatile unsigned long previous_millis(0);

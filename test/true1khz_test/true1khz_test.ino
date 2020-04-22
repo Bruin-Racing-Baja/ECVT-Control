@@ -1,3 +1,10 @@
+/* true1khz_test.ino
+ *
+ * reconfigures the ATMEGA328P-PU internal timer1 to interrupt closer to 1kHz
+ *
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ */
+
 unsigned long last_millis(0);
 int count = 0;
 

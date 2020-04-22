@@ -1,5 +1,7 @@
-/* actuator_speed_calibration.ino
- * uses a potentiometer input to control the actuator position for length measurements
+/* m19_actuator_speed_calibration.ino
+ * 
+ * uses a potentiometer input to control the Thomson actuator position for
+ * length measurements
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
  * created: 26 October 2019

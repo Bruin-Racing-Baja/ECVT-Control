@@ -1,4 +1,4 @@
-/* odrv_ino.ino
+/* odrv_teensy_test.ino
  *
  * This script tests the basic functionality of the ODrive motor driver with the ASCII protocol on a Teensy
  *

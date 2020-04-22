@@ -1,5 +1,8 @@
-/* controller_timing_test.ino
- * test to evaluate the clock time of the controller. trying to figure out how much we can load the arduino and how much should be offloaded to another board.
+/* m19_controller_timing_test.ino
+ * 
+ * test to evaluate the clock time of the controller. trying to figure out how
+ * much we can load the arduino and how much should be offloaded to another
+ * board.
  * 
  * author: Tyler McCown(tylermccown@enineering.ucla.edu)
  * created: 31 January 2020

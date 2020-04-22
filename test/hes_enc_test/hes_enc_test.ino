@@ -1,3 +1,11 @@
+/* hes_enc_test.ino
+ *
+ * calculates engine and wheel RPM by treating hall effect sensors as unsigned
+ * incremental encoders
+ *
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ */
+
 // timing
 unsigned long last_print_millis(0); // [ms]
 const byte print_period = 20; // [ms]

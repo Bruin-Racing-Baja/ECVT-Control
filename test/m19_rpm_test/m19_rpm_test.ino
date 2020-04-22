@@ -1,5 +1,6 @@
-/* rpm_test.ino
- * this sketch runs only the engine rpm measurement portion of the control code and prints it to the console for debugging.
+/* m19_rpm_test.ino
+ * 
+ * runs only the engine rpm measurement portion of the control code and prints it to the console for debugging.
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
  * created: 3 May 2019

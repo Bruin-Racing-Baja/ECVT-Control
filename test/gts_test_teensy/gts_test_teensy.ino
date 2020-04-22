@@ -1,3 +1,11 @@
+/* gts_test_teensy.ino
+ *
+ * test script for measuring engine RPM from a gear tooth sensor based on
+ * external interrupts on a Teensy board
+ *
+ * author: Tyler McCown (tylermccown@engineering.ucla.edu)
+ */
+
 #include <TimerOne.h>
 
 const byte gts_pin = 2;

@@ -1,9 +1,10 @@
 
-/* display_test.ino
- * this sketch tests the I2C display
+/* m19_display_test.ino
+ * 
+ * tests the I2C display using the included library
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
- * created: 3/24/19
+ * created: 24 March 2019
  */
 
 // display setup

@@ -7,5 +7,5 @@ build
 # temporary vim files
 *~
 
-# python virtualenvironment
+# python virtual environment
 *.odrenv
