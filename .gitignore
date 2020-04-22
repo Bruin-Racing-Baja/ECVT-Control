@@ -1,3 +1,11 @@
+# IDE settings directories
 *.vscode
 *slprj
+*.idea
 build
+
+# temporary vim files
+*~
+
+# python virtualenvironment
+*.odrenv
