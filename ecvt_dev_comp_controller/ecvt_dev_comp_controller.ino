@@ -20,7 +20,7 @@
 
 // actuator
 Servo Actuator;
-const byte actuator_pin = 9;
+const byte actuator_pin = 10;
 #define POT_MIN 166
 #define POT_MAX 254
 #define POT_ENGAGE 245
@@ -47,13 +47,15 @@ int r_k = EG_TORQUE;
 const unsigned int control_period = 20e3; // [us]
 const byte Kp = 1;
 unsigned long last_control_time(0); // [us]
+int u_k(0);
+int e_k(0);
 
 // engine sensor
 byte csr = 0x00;
-byte alarm_ctrl = 0x00;
-byte alarm_val = 0x00;
-unsigned long eg_count = 0;
-unsigned long eg_last_count = 0;
+// byte alarm_ctrl = 0x00;
+// byte alarm_val = 0x00;
+long eg_count = 0;
+long eg_last_count = 0;
 double eg_pulseToRpm = 35.714285714285715;
 int eg_rpm(0);
 
@@ -84,8 +86,6 @@ void setup() {
   // setup engine sensor
   csr |= 1<<5; // event counter mode
   csr |= 1<<2; // enable alarm control register (08h)
-  // alarm_ctrl |= 1<<4; // event alarm
-  // alarm_ctrl |= 1<<7; // alarm interrupt enable
   set_csr(csr);
   reset_counters();
 }
@@ -120,11 +120,12 @@ void control_function() {
   }
 
   // compute error
-  int e_k = r_k - eg_rpm;
+  e_k = r_k - eg_rpm;
 
   // compute control signal
-  int u_k = Kp*e_k;
+  u_k = Kp*e_k;
   u_k = constrain(u_k, u_k_min, u_k_max);
+  // u_k = 0;
 
   // write to actuator
   Actuator.writeMicroseconds(u_k + PW_STOP);
@@ -164,6 +165,10 @@ void loop() {
     Serial.print(gb_rpm);
     Serial.print(",");
     Serial.print(pot_pos);
+    // Serial.print(",");
+    // Serial.print(e_k);
+    // Serial.print(",");
+    // Serial.print(u_k);
     Serial.print("\n");
   }
 }

@@ -18,7 +18,7 @@
 
 // actuator
 Servo Actuator;
-const byte actuator_pin = 9;
+const byte actuator_pin = 10;
 #define POT_MIN 166
 #define POT_MAX 254
 #define POT_ENGAGE 245
@@ -32,7 +32,7 @@ int pos_now(0);
 // controller
 const unsigned int control_period = 20e3;
 unsigned long last_control_time(0);
-const int Kp = 50;
+const int Kp = 25;
 int pos_ref(0);
 int pos_error(0);
 int u_k(0);
@@ -40,7 +40,7 @@ int u_k_final(0);
 int (*signal_function)(unsigned long) = &const_ref;
 
 // sine signal
-const int sine_amp = (POT_ENGAGE - POT_MIN)/2 - 4; // [pot counts]
+const int sine_amp = (POT_ENGAGE - POT_MIN)/2 - 15; // [pot counts]
 const int sine_off = (POT_ENGAGE + POT_MIN)/2; // [pot counts]
 const double sine_freq = .2; // [Hz]
 
@@ -53,7 +53,7 @@ const long triangle_per = 2*(triangle_max - triangle_min)*1000000L/triangle_slop
 // logarithmic chirp signal
 const double chirp_w1 = 2*PI*.01; // [2pi*Hz]
 const double chirp_w2 = 2*PI*10; // [2pi*Hz]
-const int chirp_per = 80; // [s]
+const int chirp_per = 20; // [s]
 double chirp_alpha = 1./chirp_per*log(chirp_w2/chirp_w1);
 
 // reference pot signal
@@ -63,7 +63,7 @@ byte ref_pot_pin = A2;
 int const_pos = POT_MAX;
 
 // engine sensor (PCF8593 interface)
-byte csr_val = 0x00 | 1<<5 | 0<<7; // set control and status register to event counter mode with alarm control enabled
+byte csr_val = 0x00 | 1<<5 | 1<<2; // set control and status register to event counter mode with alarm control enabled
 long eg_last_count(0);
 int eg_rpm(0);
 double eg_pulseToRpm = 35.714285714285715;
@@ -84,6 +84,8 @@ void setup() {
   Serial.begin(256000);
 
   // join i2c bus
+  pinMode(A4, OUTPUT);
+  pinMode(A5, OUTPUT);
   Wire.begin();
 
   // setup actuator
@@ -119,8 +121,9 @@ void control_function(unsigned long t) {
   Actuator.writeMicroseconds(u_k_final + PW_STOP);
 
   // engine rpm
-  // long eg_count = get_count();
-  // eg_rpm = (eg_count - eg_last_count)*eg_pulseToRpm;
+  long eg_count = get_count();
+  eg_rpm = (eg_count - eg_last_count)*eg_pulseToRpm;
+  // eg_count = eg_rpm;
 
   // print data
   Serial.print(pos_ref);
@@ -134,7 +137,7 @@ void control_function(unsigned long t) {
   // Serial.print(t);
   Serial.print("\n");
 
-  // eg_last_count = eg_count;
+  eg_last_count = eg_count;
 }
 
 int sine(unsigned long t) {
