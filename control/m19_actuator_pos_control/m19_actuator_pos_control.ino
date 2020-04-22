@@ -1,10 +1,10 @@
-/* actuator_position_control.ino
- * this script runs a P controller on the old actuator to track a reference position based on potentiometer feedback
+/* m19_actuator_pos_control.ino
+ * 
+ * runs a P controller on the Thomson actuator to track a reference position based on potentiometer feedback
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
- * created: 3/26/19
+ * created: 26 March 2019
  */ 
-
 
 #include <Servo.h>
 

@@ -1,6 +1,7 @@
-/* ecvt_dev_comp_controller.ino
+/* m19_dev_control.ino
  *
- * Development version of the ecvt_competition_controller.
+ * Development version of the ecvt_competition_controller. Currently
+ * implementing a pulse counter IC and custom library for measuring engine RPM.
  *
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
  * created: 20 February 2020

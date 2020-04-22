@@ -1,5 +1,6 @@
-/* actuator_stop.ino
- * writes a stop command to the actuator
+/* m19_actuator_stop.ino
+ * 
+ * writes a stop command to the Thomson actuator
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
  * created: 10 March 2019

@@ -1,5 +1,6 @@
-/* eCVT_Display.ino
- * runs the eCVT using last year's competition code with the addition of an I2C display
+/* m19_comp_control_display.ino
+ * 
+ * runs the ECVT using California 2019 competition code with the addition of an I2C display
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
  * created: 3 October 2019

@@ -1,5 +1,9 @@
-/* eCVT_Competition_Controller.ino
- * version of the competition from Baja SAE California 2019, with a few tweaks made for readability and efficiency
+/* m19_comp_control.ino
+ * 
+ * runs the ECVT for the California 2019 competition. determines a reference
+ * engine RPM based on wheel RPM, tracks the reference engine RPM using engine
+ * RPM to command an actuator shift speed. includes a few tweaks made for
+ * readability and efficiency after the competition
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu), Iou-Sheng Chang
  * created: 15 May 2019
