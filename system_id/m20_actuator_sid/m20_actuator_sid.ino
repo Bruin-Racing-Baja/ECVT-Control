@@ -1,6 +1,10 @@
-/* beccy.ino
+/* m20_actuator_sid.ino
  *
- * Bruin Racing Baja 2020 ECVT Controller based on Teensy 4.0
+ * Gathers response data for a system identification of the BERTHA actuator.
+ * The input is a velocity command and the output is a velocity calculated
+ * from encoder position readings. Readings are printed to serial for live
+ * interpretation by m20_actuator_sid.m. Intended for use with a Teensy 3.2 or
+ * above to achieve the necessary sample rate.
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
  * created: 19 March 2020
@@ -85,17 +89,7 @@ void control_function() {
     // calculate current velocity
     vel_k = (pos_k - pos_k1)*1e6/ts;
 
-    // calculate error
-    // e_k = pos_ref - pos_k;
-    // se_k += e_k;
-
     // calculate control signal
-    // u_k = Kp*e_k + Ki*se_k;
-    // u_k = analogRead(A0) - 500;
-    // u_k = constrain(u_k, -1000, 1000);
-    // if (abs(u_k) < 50) {
-        // u_k = 0;
-    // }
     u_k = chirp(t);
 
     // write control signal
@@ -104,5 +98,6 @@ void control_function() {
     // update past values
     pos_k1 = pos_k;
 
+    // print input/output data with timestamp
     Serial << t/1e6 << ',' << u_k << ',' << vel_k << endl;
 }

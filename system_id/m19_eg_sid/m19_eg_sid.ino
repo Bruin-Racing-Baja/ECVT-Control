@@ -1,4 +1,4 @@
-/* eg_sid.ino
+/* m19_eg_sid.ino
  *
  * This script runs various system identification tests to build a plant model
  * for the powertrain. Select the input signal by changing (*signal_function)

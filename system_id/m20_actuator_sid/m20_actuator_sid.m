@@ -1,3 +1,8 @@
+% m20_actuator_sid.m
+% 
+% gathers input/output data printed by a microcontroller for live system
+% identification of the BERTHA actuator
+
 clear;
 clc;
 close all;

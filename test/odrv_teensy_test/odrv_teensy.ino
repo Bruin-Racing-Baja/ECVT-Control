@@ -34,61 +34,56 @@ void setup() {
     // Serial.println("ODrive ino test");
 
     // check bus voltage
-    // odrv_serial << "r vbus_voltage" << endl;
-    // double vbus = odrv.readFloat();
-    // delay(100);
-    // Serial << "Bus voltage: " << vbus << endl;
+    odrv_serial << "r vbus_voltage" << endl;
+    double vbus = odrv.readFloat();
+    delay(100);
+    Serial << "Bus voltage: " << vbus << endl;
 
     // sinusoidal velocity test
-    // Serial << "----- Sine test -----" << endl;
-    // odrv.run_state(axis, ODriveArduino::AXIS_STATE_CLOSED_LOOP_CONTROL, false);
-    // Serial << "Motor armed" << endl;
-    // delay(1000);
-    // int sine_per = 5000; // [ms]
-    // unsigned long t0 = millis();
-    // unsigned long t_last = t0;
-    // unsigned long t = t0;
-    // while (t - t0 < 2*sine_per) {
-    //     t = millis();
-    //     int vel_ref = 200*sin(2*PI/sine_per*t) + 400;
-    //     odrv.SetVelocity(axis, vel_ref);
-    //     t_last = t;
-    //     odrv_serial << "r axis" << axis << ".encoder.pos_estimate" << endl;
-    //     double pos = odrv.readFloat();
-    //     Serial << t << "," << vel_ref << "," << pos << endl;
-    //     delay(max(0, ts - (millis() - t_last)));
-    // }
-    // delay(100);
-    // odrv.SetVelocity(axis, 0);
-    // odrv.run_state(axis, ODriveArduino::AXIS_STATE_IDLE, false);
+    Serial << "----- Sine test -----" << endl;
+    odrv.run_state(axis, ODriveArduino::AXIS_STATE_CLOSED_LOOP_CONTROL, false);
+    Serial << "Motor armed" << endl;
+    delay(1000);
+    int sine_per = 5000; // [ms]
+    unsigned long t0 = millis();
+    unsigned long t_last = t0;
+    unsigned long t = t0;
+    while (t - t0 < 2*sine_per) {
+        t = millis();
+        int vel_ref = 200*sin(2*PI/sine_per*t) + 400;
+        odrv.SetVelocity(axis, vel_ref);
+        t_last = t;
+        odrv_serial << "r axis" << axis << ".encoder.pos_estimate" << endl;
+        double pos = odrv.readFloat();
+        Serial << t << "," << vel_ref << "," << pos << endl;
+        delay(max(0, ts - (millis() - t_last)));
+    }
+    delay(100);
+    odrv.SetVelocity(axis, 0);
+    odrv.run_state(axis, ODriveArduino::AXIS_STATE_IDLE, false);
 
     // chirp velocity test
-    // Serial << "----- Chirp test -----" << endl;
-    // int chirp_amp = 200;
-    // double chirp_w1 = 2*PI*.1;
-    // double chirp_w2 = 2*PI*10;
-    // double chirp_per = 10;
-    // double chirp_off = 400;
-    // configure_chirp(chirp_amp, chirp_w1, chirp_w2, chirp_per, chirp_off);
-    // int N = chirp_per*1000/ts;
-    // for (int i = 0; i < N; i++) {
-    //     unsigned long t = millis();
-    //     Serial << i << ',' << chirp(t) << endl;
-    //     delay(max(0, ts - (millis() - t)));
-    // }
-    // delay(1000);
-    // Serial << "Test complete." << endl;
+    Serial << "----- Chirp test -----" << endl;
+    int chirp_amp = 200;
+    double chirp_w1 = 2*PI*.1;
+    double chirp_w2 = 2*PI*10;
+    double chirp_per = 10;
+    double chirp_off = 400;
+    configure_chirp(chirp_amp, chirp_w1, chirp_w2, chirp_per, chirp_off);
+    int N = chirp_per*1000/ts;
+    unsigned long chirp_start = millis()
+    for (int i = 0; i < N; i++) {
+        unsigned long t = millis();
+        Serial << i << ',' << chirp(t - chirp_start) << endl;
+        delay(max(0, ts - (millis() - t)));
+    }
+    delay(1000);
+    Serial << "Test complete." << endl;
 }
 
 void loop() {
-    // odrv_serial << "r vbus_voltage" << '\n';
-    // Serial << odrv.readFloat() << '\n';
-    // odrv_serial << "r axis" << axis << ".encoder.pos_estimate\n";
-    // double pos = odrv.readFloat();
-    // Serial << pos << endl;
-    // delay(100);
-    i++;
-    i = i % 60;
-    Serial << i << ',' << i+10 << '\n';
-    delay(1000);
+    odrv_serial << "r axis" << axis << ".encoder.pos_estimate\n";
+    double pos = odrv.readFloat();
+    Serial << pos << endl;
+    delay(100);
 }
