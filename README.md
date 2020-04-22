@@ -1,10 +1,9 @@
 # Baja Bruin Racing
-Microcontroller code for Baja Bruin Racing.
+Control design and development code for Baja Bruin Racing.
 
 - Sketches with the prefix `actuator_` are meant to run on the actuator alone.
 - Sketches with the prefix `eCVT_` are meant to run on the whole powertrain.
 - `actuator_position_control` can run either on the standalone actuator or the whole powertrain.
-
 
 # Actuator (Good Boy)
 We have a Thompson Max Jac linear actuator.
