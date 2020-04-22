@@ -1,6 +1,12 @@
 /* eg_sid.ino
  *
- * This script runs various system identification tests to build a plant model for the powertrain. Select the input signal by changing (*signal_function) and setting the appropriate signal parameters. The tests are meant to run on a jackstand with a geartooth sensored engine and hall sensored gearbox.
+ * This script runs various system identification tests to build a plant model
+ * for the powertrain. Select the input signal by changing (*signal_function)
+ * and setting the appropriate signal parameters. The tests are meant to run on
+ * a jackstand with a geartooth sensored engine and hall sensored gearbox.
+ * 
+ * On Model 19 the hardware returns so much noise that the data becomes
+ * unusable. That is the reason for all of the debugging files in this directory.
  *
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
  * created: 19 February 2020

@@ -1,8 +1,9 @@
-/* eCVT_chirp_response.ino
- * this sketch gathers chirp response data for a system identification of PWM to engine rpm
+/* m19_chirp.ino
+ * 
+ * gathers chirp response data for a system identification of PWM to engine rpm
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
- * created: 5/8/19
+ * created: 8 May 2019
  */
 
 #include <Servo.h>

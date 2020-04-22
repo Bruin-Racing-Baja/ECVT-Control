@@ -1,8 +1,10 @@
-/* eCVT_chirp_response.ino
- * this sketch gathers chirp response data for a system identification of PWM to engine rpm
+/* m19_step.ino
+ * 
+ * gathers step response data for a system identification of PWM to actuator
+ * position for the Thomson actuator.
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
- * created: 5/8/19
+ * created: 8 May 2019
  */
 
 #include <Servo.h>
@@ -64,13 +66,10 @@ SIGNAL(TIMER0_COMPA_vect) {
   if (current_millis - lastControlTime >= controlPeriod) {
     
     if (mode == 0) {
-      // position controller
-//      control_function();
+      // set poisition reference to outer limit
       r_k = 220;
     } else if (mode == 1) {
-      // shift in
-//      u_k = PW_MIN;
-//      Actuator.writeMicroseconds(u_k);
+      // set position reference to inner limit
       r_k = 170;
     }
     control_function();

@@ -1,8 +1,10 @@
-/* actuator_step_response.ino
- * this sketch gathers step response data for a system identification of PWM to actuator position
+/* m19_actuator_step.ino
+ * 
+ * gathers step response data for a system identification of PWM to actuator
+ * position for the Thomson actuator
  * 
  * author: Tyler McCown (tylermccown@engineering.ucla.edu)
- * created: 4/10/19
+ * created: 10 April 2019
  */
 
 #include <Servo.h>
