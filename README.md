@@ -1,4 +1,4 @@
-# Baja Bruin Racing
+# Baja Bruin Racing / ECVT Control
 Control design and development code for Baja Bruin Racing ECVT.
 
 - [Model 20](#model-20)
