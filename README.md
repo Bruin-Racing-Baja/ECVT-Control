@@ -1,14 +1,8 @@
 # Baja Bruin Racing
 Control design and development code for Baja Bruin Racing ECVT.
 
-- [Model 20](#Model%2020)
-    <!-- * [Actuator - "BERTHA"](#Actuator%20-%20"BERTHA") -->
-    <!-- * [Control hardware](##Control%20hardware) -->
-    <!-- * [Controller - "BECCY"](##Controller%20-%20"BECCY") -->
-- [Model 19 - "Blue Car"](##Model%2019---"Blue-Car")
-    <!-- * [Actuator - "Good Boy"](#Actuator%20-%20"Good%20Boy") -->
-    <!-- * [Control hardware](##Control%20hardware) -->
-    <!-- * [Display](##Display) -->
+- [Model 20](#model-20)
+- [Model 19 - Blue Car](#model-19---blue-car)
 
 
 All scripts are organized into three main folders:
@@ -18,7 +12,7 @@ All scripts are organized into three main folders:
 
 # Model 20
 
-## Actuator - "BERTHA"
+## Actuator - BERTHA
 
 Model 20 uses the Baja ECVT Reworked THomson Actuator (BERTHA) mechanism, Bruin Racing's first ever custom actuation system. It is based on a [Racerstar BLDC motor](https://www.racerstar.com/racerstar-5065-brh5065-200kv-6-12s-brushless-motor-without-gear-for-balancing-scooter-p-115.html) which drives a ball-screw mechanism. The mechanism is similar to the Thomson Max Jac used in Model 19, but with greatly increased shift speed. Additional sensors include a potentiometer for absolute position feedback, unipolar digital hall effect sensors for limit detection, and hard stop limit switches to prevent overshifting. The BLDC has internal digital hall effect sensors to closed loop speed control through a supporting ESC. The motor driver of choice is an [ODrive 3.6](https://odriverobotics.com), accepting a commanded velocity through serial communication and running an internal closed loop velocity controller. 
 
@@ -44,12 +38,12 @@ The limit switches have not yet been wired in the final housing.
 
 ## Control hardware
 
-## Controller - "BECCY"
+## Controller - BECCY
 The control law has not yet been designed.
 
-# Model 19 - "Blue Car"
+# Model 19 - Blue Car
 
-## Actuator - "Good Boy"
+## Actuator - Good Boy
 Blue Car uses a Thompson Max Jac ball-screw linear actuator. The mechanism is a brushed DC motor which is geared to drive a ball-screw. A Syren motor driver is used to power the actuator based on an RC servo signal interpreted as an open loop commanded velocity. A built-in potentiometer provides optional position feedback which can be read by the microcontroller.
 
 ### wiring
