@@ -1,6 +1,7 @@
 # Baja Bruin Racing / ECVT Control
 Control design and development code for Baja Bruin Racing ECVT.
 
+- [Development environment](#development-environment)
 - [Model 20](#model-20)
 - [Model 19 - Blue Car](#model-19---blue-car)
 
@@ -9,6 +10,29 @@ All scripts are organized into three main folders:
 - `test` contains test code for all hardware including sensors, microcontrollers, IC's, etc. They are often single use and do not include wiring diagrams.
 - `system_id` contains system identification code for independent actuators or the whole car. Wiring diagrams are shown in EasyEDA and are the overall car schematic or just the isolated actuator components.
 - `control` contains control code for independent actuators or the whole car. Wiring diagrams are shown in EasyEDA and are the overall car schematic or just the isolated actuator components.
+
+The first section in this document is a short tutorial for the primary development environment used in this repo. The following sections are some documentation about the control systems for various years.
+
+# Development environment
+
+## Installation
+
+The development platform primarily used is [VS Code](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/install/ide?install=vscode). If PIO Home does not open upon installation, it can be accessed from the PlatformIO toolbar on the left side of VS Code under `QUICK ACCESS > PIO Home > Open`. Be sure to install the appropriate board packages from the `Boards` tab of PIO Home before starting a new project.
+
+## Arduino libraries Environment variable
+
+Platform IO allows sketches to be compiled and uploaded to an embededded device directly from VS Code. As such, the IDE must have access to any libraries which your code depends on, typically installed in `~/Documents/Arduino/libraries`. Because various users have different paths, adding the path to your libraries folder will not work for everyone and will result in code that only you can compile. This is not desirable for collaborative development. The simplest solution is for each user to define a system environment variable which points to their libraries directory, and point the IDE towards the environment variable.
+
+To define a system environment variable in Windows, open the control panel (the Windows 7 version) and navigate to `System and Security > System > Advanced system settings > Environment Variables`, then click `New` in the `System variables` window (below). Enter `ARDUINO_LIB` for the variable name, then browse to your libraries directory for the variable value. **All users must use the name `ARDUINO_LIB` in order for this to work**. Instructions on adding the environment variable to the compilation path are given [below](##creating-a-new-project).
+
+## Creating a new project
+
+In the `Home` tab of PIO Home, select `New Project` from the Quick Access menu. This opens the Project Wizard window. Name the project, select the board (see [note](##installation) above about installing boards), and select the appropriate location. This will create a new project in the location directory that you selected and add the project to your VS Code workspace. If your workspace was already populated then you will need to open a new window whose workspace contains only the new project in order to use the native build feature. You will know that your workspace is correctly setup if you see a row of icons at the bottom left corresponding to Platform IO features. To verify, the project can be compiled with `ctrl-alt-B` or by clicking the check mark icon at the bottom left. A terminal session should be appear and run the compilation routine. The project can be uploaded to the connected board with `ctrl-alt-U` or by clicking the right arrow icon at the bottom left.
+
+If your project uses any locally installed libraries then you will need to point Platform IO to your local libraries directory. The best way to do this for code portability is to use an environment variable which points towards your local library. Instructions on defining an environment variable is given [above](##arduino-libraries-environment-variable). Once the variable is defined, add the following line to your `platform.ini` under the environment which you will be using
+```ini
+lib_extra_dirs = ${sysenv.ARDUINO_LIB}
+```
 
 # Model 20
 
