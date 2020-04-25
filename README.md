@@ -17,7 +17,7 @@ The first section in this document is a short tutorial for the primary developme
 
 ## Installation
 
-The development platform primarily used is [VS Code](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/install/ide?install=vscode). If PIO Home does not open upon installation, it can be accessed from the PlatformIO toolbar on the left side of VS Code under `QUICK ACCESS > PIO Home > Open`. Be sure to install the appropriate board packages from the `Boards` tab of PIO Home before starting a new project.
+The development platform primarily used is [VS Code](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/install/ide?install=vscode). If PIO Home does not open upon installation, it can be accessed from the PlatformIO toolbar on the left side of VS Code under `QUICK ACCESS > PIO Home > Open`.
 
 ## Arduino libraries Environment variable
 
@@ -27,7 +27,7 @@ To define a system environment variable in Windows, open the control panel (the 
 
 ## Creating a new project
 
-In the `Home` tab of PIO Home, select `New Project` from the Quick Access menu. This opens the Project Wizard window. Name the project, select the board (see [note](##installation) above about installing boards), and select the appropriate location. This will create a new project in the location directory that you selected and add the project to your VS Code workspace. If your workspace was already populated then you will need to open a new window whose workspace contains only the new project in order to use the native build feature. You will know that your workspace is correctly setup if you see a row of icons at the bottom left corresponding to Platform IO features. To verify, the project can be compiled with `ctrl-alt-B` or by clicking the check mark icon at the bottom left. A terminal session should be appear and run the compilation routine. The project can be uploaded to the connected board with `ctrl-alt-U` or by clicking the right arrow icon at the bottom left.
+In the `Home` tab of PIO Home, select `New Project` from the Quick Access menu. This opens the Project Wizard window. Name the project, select the board, and select the appropriate location. This will create a new project in the location directory that you selected and add the project to your VS Code workspace. If your workspace was already populated then you will need to open a new window whose workspace contains only the new project in order to use the native build feature. You will know that your workspace is correctly setup if you see a row of icons at the bottom left corresponding to Platform IO features. To verify, the project can be compiled with `ctrl-alt-B` or by clicking the check mark icon at the bottom left. A terminal session should be appear and run the compilation routine. The project can be uploaded to the connected board with `ctrl-alt-U` or by clicking the right arrow icon at the bottom left.
 
 If your project uses any locally installed libraries then you will need to point Platform IO to your local libraries directory. The best way to do this for code portability is to use an environment variable which points towards your local library. Instructions on defining an environment variable is given [above](##arduino-libraries-environment-variable). Once the variable is defined, add the following line to your `platform.ini` under the environment which you will be using
 ```ini
