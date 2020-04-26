@@ -21,7 +21,7 @@ ODriveArduino odrv(odrv_serial);
 const byte odrv_rst = 4;
 
 // select motor axis
-const byte axis = 1;
+const byte axis = 0;
 
 // other sensors
 const byte act_pot = 14;    // actuator potentiometer
@@ -96,7 +96,6 @@ void setup() {
     homing_routine();
 
     // configure interrupts
-    attachInterrupt(dir_button, switch_direction, RISING);
     Timer1.initialize(ts);
     Timer1.attachInterrupt(control_function);
 
@@ -134,14 +133,6 @@ int homing_routine() {
     return(1);
 }
 
-void switch_direction() {
-    unsigned long this_trigger = millis();
-    if (this_trigger - last_trigger > 1000) {
-        dir = -dir;
-    }
-    last_trigger = this_trigger;
-}
-
 void control_function() {
 
     // get current time
@@ -156,7 +147,8 @@ void control_function() {
     mvelk = (menck - menck1)*1e6/ts; // [count/s]
 
     // calculate control signal
-    u_k = dir*50;
+    int pot_reading = analogRead(act_pot);
+    u_k = map(pot_reading, 0, 1023, -400, 400);
 
     // unidirectional limit switching with hysteresis
     if ((hit_max) && (menck < enc_max - 10)) {
@@ -186,7 +178,7 @@ void control_function() {
     // print input/output data with timestamp
     Serial
         << t/1e6 << ','
-        // << apot << ','
+        << apot << ','
         << menck << ','
         << mvelk << ','
         << u_k << endl;
