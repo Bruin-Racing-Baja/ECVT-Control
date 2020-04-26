@@ -31,13 +31,15 @@ void setup() {
     // open serial to computer
     Serial.begin(115200);
     while(!Serial);
-    // Serial.println("ODrive ino test");
+    Serial.println("----- ODrive ino test -----");
 
     // check bus voltage
-    odrv_serial << "r vbus_voltage" << endl;
-    double vbus = odrv.readFloat();
-    delay(100);
-    Serial << "Bus voltage: " << vbus << endl;
+    double vbus = 0.;
+    while (vbus < 20) {
+        odrv_serial << "r vbus_voltage" << endl;
+        vbus = odrv.readFloat();
+        Serial << "Bus voltage: " << vbus << endl;
+    }
 
     // sinusoidal velocity test
     Serial << "----- Sine test -----" << endl;
@@ -71,10 +73,10 @@ void setup() {
     double chirp_off = 400;
     configure_chirp(chirp_amp, chirp_w1, chirp_w2, chirp_per, chirp_off);
     int N = chirp_per*1000/ts;
-    unsigned long chirp_start = millis()
+    t0 = millis();
     for (int i = 0; i < N; i++) {
         unsigned long t = millis();
-        Serial << i << ',' << chirp(t - chirp_start) << endl;
+        Serial << i << ',' << chirp(t - t0) << endl;
         delay(max(0, ts - (millis() - t)));
     }
     delay(1000);
@@ -82,8 +84,7 @@ void setup() {
 }
 
 void loop() {
-    odrv_serial << "r axis" << axis << ".encoder.pos_estimate\n";
-    double pos = odrv.readFloat();
-    Serial << pos << endl;
-    delay(100);
+    // odrv_serial << "r axis" << axis << ".encoder.pos_estimate\n";
+    // double pos = odrv.readFloat();
+    // Serial << pos << endl;
 }
