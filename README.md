@@ -4,6 +4,7 @@ Control design and development code for Baja Bruin Racing ECVT.
 - [Development environment](#development-environment)
 - [Model 20](#model-20)
 - [Model 19 - Blue Car](#model-19---blue-car)
+- [Dictionary](#dictionary)
 
 
 All scripts are organized into three main folders:
@@ -112,3 +113,16 @@ This component was never successfully implemented with the full system. It worke
 3. NC (brown)
 4. 5V (red)
 5. GND (black)
+
+# Dictionary
+
+I like to nickname and abbreviate things. Here are some common ones.
+
+- BECCY - Baja ECVT Controls Console, Yeet: control system for Model 20
+- BERTHA - Baja ECVT Reworked THomson Actuator: actuation system for Model 20
+- eg: engine
+- enc: encoder
+- gb: gearbox
+- gts: geartooth sensor
+- METIS - Modular Exterior Threaded Insertable Sensor:
+- pot: potentiometer
