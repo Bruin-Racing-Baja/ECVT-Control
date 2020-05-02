@@ -124,5 +124,5 @@ I like to nickname and abbreviate things. Here are some common ones.
 - enc: encoder
 - gb: gearbox
 - gts: geartooth sensor
-- METIS - Modular Exterior Threaded Insertable Sensor:
+- METIS - Modular Externally-Threaded Insertable Sensor:
 - pot: potentiometer
