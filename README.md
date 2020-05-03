@@ -126,7 +126,7 @@ I like to nickname and abbreviate things. Here are some common ones.
 - ERA: Eigensystem Realization Algorithm
 - gb: gearbox
 - gts: geartooth sensor
-- METIS - Modular Exterior Threaded Insertable Sensor:
+- METIS - Modular Externally-Threaded Insertable Sensor:
 - LST-HSP - Low Speed Torque High Speed Power
 - OKID - Observer Kalman filter IDentification
 - pot: potentiometer
