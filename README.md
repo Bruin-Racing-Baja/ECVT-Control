@@ -120,9 +120,15 @@ I like to nickname and abbreviate things. Here are some common ones.
 
 - BECCY - Baja ECVT Controls Console, Yeet: control system for Model 20
 - BERTHA - Baja ECVT Reworked THomson Actuator: actuation system for Model 20
+- BFS - Basic Feasible Solution
 - eg: engine
 - enc: encoder
+- ERA: Eigensystem Realization Algorithm
 - gb: gearbox
 - gts: geartooth sensor
 - METIS - Modular Exterior Threaded Insertable Sensor:
+- LST-HSP - Low Speed Torque High Speed Power
+- OKID - Observer Kalman filter IDentification
 - pot: potentiometer
+- SAFRON - Spectral Average Frequency Response ONline
+
